@@ -1,0 +1,32 @@
+{
+  "name": "fido2-js",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "SirKostya009",
+  "description": "Utility functions for parsing and verifying WebAuthn attestation and assertion responses.",
+  "main": "index.js",
+  "repository": "github:sirkostya009/fido2-js",
+  "keywords": [
+    "webauthn",
+    "passkey",
+    "security key",
+    "yubikey",
+    "u2f",
+    "fido",
+    "fido2",
+    "lib",
+    "authentication",
+    "web authentication",
+    "server"
+  ],
+  "bugs": {
+    "url": "https://github.com/sirkostya009/fido2-js/issues"
+  },
+  "homepage": "https://github.com/sirkostya009/fido2-js#readme",
+  "dependencies": {
+    "cbor-x": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4"
+  }
+}
