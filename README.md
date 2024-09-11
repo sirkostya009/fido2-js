@@ -26,14 +26,12 @@ try {
         userFactor: ['verified', 'present'],
     });
 
-    publicKey = parsedAttestation.response.attestationObject.authData.attestedCredentialData.credentialPublicKey;
+    publicKey = parsedAttestation.jwk();
 
     console.log('assertion succeeded');
 } catch (err) {
     console.error('assertion failed', err.message);
 }
-
-const { jwk } = publicKey; // publicKey has a getter that calls `coseToJwk` on this
 
 try {
     // will return the thrown Error object on failure, if any

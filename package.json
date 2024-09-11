@@ -1,11 +1,14 @@
 {
   "name": "fido2-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "author": "SirKostya009",
-  "description": "Utility functions for parsing and verifying WebAuthn attestation and assertion responses.",
+  "description": "Low-level library for parsing and verifying FIDO2 attestation and assertion responses on the server",
   "main": "index.js",
-  "repository": "github:sirkostya009/fido2-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sirkostya009/fido2-js.git"
+  },
   "keywords": [
     "webauthn",
     "passkey",
