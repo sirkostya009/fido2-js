@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import { parse, verify } from './index.js';
 
-test('integration test', () => {
+test('integration test', async () => {
 	const attest = parse({
 		id:    'ppqeP1nacOM5xsWBMpYRQPd-rp4x1DRXRtQ3YycjLrw',
 		rawId: 'ppqeP1nacOM5xsWBMpYRQPd+rp4x1DRXRtQ3YycjLrw=',
@@ -11,7 +11,9 @@ test('integration test', () => {
 		}
 	});
 
-	verify(attest, {
+	console.log(attest);
+
+	await verify(attest, {
 		type: 'webauthn.create',
 		challenge: 'W29iamVjdCBBcnJheUJ1ZmZlcl0=',
 		origins: ['http://localhost:5500'],
@@ -30,7 +32,9 @@ test('integration test', () => {
 		}
 	});
 
-	verify(assert, {
+	console.log(assert.response.authenticatorData.flags);
+
+	await verify(assert, {
 		type: 'webauthn.get',
 		challenge: 'W29iamVjdCBBcnJheUJ1ZmZlcl0=',
 		origins: ['http://localhost:5500'],

@@ -1,8 +1,21 @@
-const crypto = require('crypto');
 const { toBuffer, coseToJwk } = require('./utils');
 
-function verify({ response: { clientData, authenticatorData, attestationObject, userHandle, signature }, rawClientData, rawAuthenticatorData },
-				{ origins, challenge, publicKey, counter, userFactor, userHandle: uh, rpId, type }) {
+function equals(a1, a2) {
+	if (a1.length !== a2.length) {
+		return false;
+	}
+
+	for (let i = 0; i < a1.length; ++i) {
+		if (a1[i] !== a2[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+async function verify({ response: { clientData, authenticatorData, attestationObject, userHandle, signature }, rawClientData, rawAuthenticatorData },
+                      { origins, challenge, publicKey, counter, userFactor, userHandle: uh, rpId, type }) {
 	if (!Array.isArray(origins) || origins.length === 0) {
 		throw new Error("'origins' must be an array with at least one element");
 	}
@@ -13,8 +26,8 @@ function verify({ response: { clientData, authenticatorData, attestationObject, 
 
 	challenge = toBuffer(challenge, 'options.challenge');
 
-	if (!challenge.equals(toBuffer(clientData.challenge, 'parsed.response.clientData.challenge'))) {
-		throw new Error(`Challenge mismatch, got: ${clientData.challenge}, expected: ${challenge.toString('base64')}`);
+	if (!equals(challenge, toBuffer(clientData.challenge, 'parsed.response.clientData.challenge'))) {
+		throw new Error(`Challenge mismatch, got: ${clientData.challenge}, expected: ${challenge}`);
 	}
 
 	if (counter) {
@@ -62,8 +75,8 @@ function verify({ response: { clientData, authenticatorData, attestationObject, 
 			userHandle = toBuffer(userHandle, 'parsed.response.userHandle');
 			uh = toBuffer(uh, 'options.userHandle');
 
-			if (!userHandle.equals(uh)) {
-				throw new Error(`User handle mismatch, got: ${userHandle.toString('base64')}, expected: ${uh.toString('base64')}`);
+			if (!equals(userHandle, uh)) {
+				throw new Error(`User handle mismatch, got: ${userHandle}, expected: ${uh}`);
 			}
 		}
 
@@ -74,7 +87,7 @@ function verify({ response: { clientData, authenticatorData, attestationObject, 
 				key = coseToJwk(key);
 			}
 			if (key.kty) {
-				key = { key, format: 'jwk' };
+				key = await crypto.subtle.importKey('jwk', key, 'SHA-256', true, ['verify']);
 			}
 
 			if (!signature) {
@@ -86,12 +99,12 @@ function verify({ response: { clientData, authenticatorData, attestationObject, 
 				throw new Error(`Expected rawClientData, rawAuthenticatorData to be functions, got ${rawClientData}, ${rawAuthenticatorData} respectively`);
 			}
 
-			const data = Buffer.concat([
-				rawAuthenticatorData(),
-				crypto.createHash('sha256').update(rawClientData()).digest(),
-			]);
+			/** @type {Uint8Array} */
+			const data = rawAuthenticatorData();
+			data.length += 32;
+			data.set(await crypto.subtle.digest('sha256', rawClientData()), data.length - 32);
 
-			if (!crypto.verify(null, data, key, signature)) {
+			if (!(await crypto.subtle.verify('sha256', key, signature, data))) {
 				throw new Error("Signature verification failed");
 			}
 		}
@@ -115,9 +128,9 @@ function verify({ response: { clientData, authenticatorData, attestationObject, 
 	if (rpId) {
 		const { rpIdHash } = authenticatorData || attestationObject.authData;
 
-		const hash = crypto.createHash('sha256').update(rpId).digest();
+		const hash = await crypto.subtle.digest('sha256', rpId);
 
-		if (!hash.equals(rpIdHash)) {
+		if (!equals(hash, rpIdHash)) {
 			throw new Error("'rpId' hash doesn't match");
 		}
 	}

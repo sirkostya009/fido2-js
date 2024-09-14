@@ -14,12 +14,12 @@ function parseAuthenticatorData(buf) {
 			at:   !!(buf[32] & 1 << 6),
 			ed:   !!(buf[32] & 1 << 7),
 		},
-		signCount: buf.readInt32BE(33),
+		signCount: (buf[33] << 24) | (buf[34] << 16) | (buf[35] << 8) | buf[36],
 	};
 
 	let decoded;
 	if (result.flags.at) {
-		const credentialIdLength = buf.readUInt16BE(53);
+		const credentialIdLength = (buf[53] << 8) | buf[54];
 		const subarray = buf.subarray(55 + credentialIdLength);
 
 		result.attestedCredentialData = {
@@ -38,7 +38,7 @@ function parseAuthenticatorData(buf) {
 }
 
 function parse(obj) {
-	if (typeof obj === 'string' || Buffer.isBuffer(obj)) {
+	if (typeof obj === 'string') {
 		obj = JSON.parse(obj);
 	} else if (typeof obj !== 'object') {
 		throw new Error(`Cannot parse ${obj}`);
@@ -50,7 +50,7 @@ function parse(obj) {
 		...rest,
 		response: {
 			...response,
-			clientData: JSON.parse(toBuffer(clientDataJSON, 'response.clientDataJSON')),
+			clientData: JSON.parse(atob(clientDataJSON)),
 		},
 		rawClientData() {
 			return toBuffer(clientDataJSON, 'clientDataJSON');

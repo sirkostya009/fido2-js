@@ -1,10 +1,12 @@
 function toBuffer(value, valueName) {
 	try {
-		return Buffer.isBuffer(value)
-			? value
-			: Buffer.from(value, typeof value === 'string' ? 'base64' : undefined);
+		return value instanceof ArrayBuffer
+			? new Uint8Array(value)
+			: value instanceof Uint8Array
+				? value
+				: Uint8Array.from(atob(value), c => c.charCodeAt(0));
 	} catch (err) {
-		throw new Error(`'${valueName}' must be either a BufferSource coercible or a base64-encoded string`);
+		throw new Error(`'${valueName}' must be either an ArrayBuffer coercible or a base64 string`);
 	}
 }
 

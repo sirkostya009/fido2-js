@@ -1,6 +1,6 @@
 {
   "name": "fido2-js",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "license": "MIT",
   "author": "SirKostya009",
   "description": "Low-level library for parsing and verifying FIDO2 attestation and assertion responses on the server",
@@ -28,8 +28,5 @@
   "homepage": "https://github.com/sirkostya009/fido2-js#readme",
   "dependencies": {
     "cbor-x": "^1.6.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.5.4"
   }
 }

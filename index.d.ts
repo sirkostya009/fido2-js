@@ -1,6 +1,8 @@
-import { KeyLike, VerifyJsonWebKeyInput, VerifyKeyObjectInput, VerifyPublicKeyInput } from 'crypto';
-
 type base64 = string;
+
+type U8Buffer = Uint8Array | Buffer;
+
+type ClientDataType = 'webauthn.create' | 'webauthn.get';
 
 /**
  * Data that was passed to the authenticator
@@ -8,7 +10,7 @@ type base64 = string;
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/API/AuthenticatorResponse/clientDataJSON)
  */
 export declare interface ClientData {
-	type: 'webauthn.create' | 'webauthn.get',
+	type: ClientDataType,
 	challenge: base64,
 	origin: string,
 	crossOrigin?: boolean,
@@ -35,9 +37,9 @@ export declare interface OKP {
 	/** Curvature */
 	[-1]: 1 | 2 | 3,
 	/** Public key x coordinate */
-	[-2]: Buffer,
+	[-2]: U8Buffer,
 	/** Private key */
-	[-3]?: Buffer,
+	[-3]?: U8Buffer,
 }
 
 export declare interface EC {
@@ -48,11 +50,11 @@ export declare interface EC {
 	/** Curvature */
 	[-1]: 1 | 2 | 3,
 	/** Public key x coordinate */
-	[-2]: Buffer,
+	[-2]: U8Buffer,
 	/** Public key y coordinate */
-	[-3]: Buffer,
+	[-3]: U8Buffer,
 	/** Private key */
-	[-4]?: Buffer,
+	[-4]?: U8Buffer,
 }
 
 export declare interface RSA {
@@ -61,15 +63,15 @@ export declare interface RSA {
 	/** Curvature */
 	[3]: -257 | -258 | -259,
 	/** RSA modulus */
-	[-1]: Buffer,
+	[-1]: U8Buffer,
 	/** RSA public exponent */
-	[-2]: Buffer,
+	[-2]: U8Buffer,
 	/** RSA private exponent */
-	[-3]?: Buffer,
+	[-3]?: U8Buffer,
 	/** RSA prime factor p of n */
-	[-4]?: Buffer,
+	[-4]?: U8Buffer,
 	/** RSA modulus */
-	[-5]?: Buffer,
+	[-5]?: U8Buffer,
 }
 
 /**
@@ -78,7 +80,7 @@ export declare interface RSA {
  * [MDN Reference](https://developer.mozilla.org/en-US/docs/Web/API/Web_Authentication_API/Authenticator_data)
  */
 export declare interface AuthenticatorData {
-	rpIdHash: Buffer,
+	rpIdHash: U8Buffer,
 	flags: {
 		up:   boolean,
 		rfu1: boolean,
@@ -91,24 +93,24 @@ export declare interface AuthenticatorData {
 	},
 	signCount: number,
 	attestedCredentialData?: {
-		aaguid: Buffer,
+		aaguid: U8Buffer,
 		credentialIdLength: number,
-		credentialId: Buffer,
+		credentialId: U8Buffer,
 		credentialPublicKey: OKP | EC | RSA,
 	},
 	extensions?: any,
 }
 
 interface ResponseType<T> {
-	response: T & { clientDataJSON: base64 | BufferSource },
+	response: T & { clientDataJSON: base64 | U8Buffer },
 }
 
-export declare type AttestationResponse = ResponseType<{ attestationObject: base64 | BufferSource }>;
+export declare type AttestationResponse = ResponseType<{ attestationObject: base64 | U8Buffer }>;
 
 type ParsedResponseType<T extends AssertionResponse | AttestationResponse, S> = Omit<T, 'response'> & {
 	response: Omit<T['response'], 'clientDataJSON' | 'authenticatorData' | 'attestationObject'> & S & { clientData: ClientData },
-	rawClientData(): Buffer,
-	rawAuthenticatorData(): Buffer,
+	rawClientData(): U8Buffer,
+	rawAuthenticatorData(): U8Buffer,
 };
 
 export declare type ParsedAttestationResponse<T extends AttestationResponse> = ParsedResponseType<T, {
@@ -124,7 +126,7 @@ export declare type ParsedAttestationResponse<T extends AttestationResponse> = P
 	},
 }> & { jwk(): JWK };
 
-export declare type AssertionResponse = ResponseType<{ authenticatorData: base64 | BufferSource }>;
+export declare type AssertionResponse = ResponseType<{ authenticatorData: base64 | U8Buffer }>;
 
 export declare type ParsedAssertionResponse<T extends AssertionResponse> = ParsedResponseType<T, { authenticatorData: AuthenticatorData }>;
 
@@ -134,7 +136,7 @@ export declare type ParsedAssertionResponse<T extends AssertionResponse> = Parse
  * @param t The object to be parsed. ClientDataJSON is expected to be a base64 representation of a JSON-encoded string. If passed as a buffer or a string, the object is expected to be JSON-parseable.
  * @throws On malformed input or if clientData isn't of type `webauthn.create` or `webauthn.get`
  */
-export declare function parse<T extends AttestationResponse>(t: T | Buffer | string): ParsedAttestationResponse<T>;
+export declare function parse<T extends AttestationResponse>(t: T | ArrayBuffer | Uint8Array | string): ParsedAttestationResponse<T>;
 
 /**
  * Method that parses assertion responses
@@ -142,23 +144,23 @@ export declare function parse<T extends AttestationResponse>(t: T | Buffer | str
  * @param t The object to be parsed. ClientDataJSON is expected to be a base64 representation of a JSON-encoded string. If passed as a buffer or a string, the object is expected to be JSON-parseable.
  * @throws On malformed input or if clientData isn't of type `webauthn.create` or `webauthn.get`
  */
-export declare function parse<T extends AssertionResponse>(t: T | Buffer | string): ParsedAssertionResponse<T>;
+export declare function parse<T extends AssertionResponse>(t: T | ArrayBuffer | Uint8Array | string): ParsedAssertionResponse<T>;
 
 export declare interface VerifyOptions {
 	/** The type of client data to verify, create for attestations and get for assertions */
-	type: 'webauthn.create' | 'webauthn.get',
+	type: ClientDataType,
 	/** Challenge to check for equality in clientData */
-	challenge: base64 | BufferSource,
+	challenge: base64 | ArrayBuffer | Uint8Array,
 	/** Array of origins to validate against */
 	origins: string[],
-	/** Either a COSE, a JWK or a `node:crypto` object representing the public key */
-	publicKey?: OKP | EC | RSA | JWK | KeyLike | VerifyKeyObjectInput | VerifyPublicKeyInput | VerifyJsonWebKeyInput,
+	/** Either a COSE, a JWK or a `CryptoKey` object representing the public key */
+	publicKey?: OKP | EC | RSA | JWK | CryptoKey,
 	/** Previous count of performed validation/attestations. */
 	counter?: number,
 	/** User's factor in authenticator. Checks if the respective flag bits are set. */
 	userFactor?: ('verified' | 'present')[] | 'either',
 	/** User's id as returned by the relying party. */
-	userHandle?: base64 | BufferSource,
+	userHandle?: base64 | ArrayBuffer | Uint8Array,
 	/** Relying party's id as was passed to the authenticator */
 	rpId?: string,
 }
@@ -170,19 +172,19 @@ export declare interface VerifyOptions {
  *
  * @param {ParsedAssertionResponse<unknown> | ParsedAttestationResponse<unknown>} parsed The parsed assertion/attestation response
  * @param options
- * @param {base64 | BufferSource} options.challenge The challenge to validate. Must be a base64 string. Required
+ * @param {base64 | ArrayBuffer | Uint8Array} options.challenge The challenge to validate. Must be a base64 string. Required
  * @param {string[]} options.origins An array of allowed origins. Required
- * @param {OKP | EC | RSA | JWK | KeyLike | VerifyKeyObjectInput | VerifyPublicKeyInput | VerifyJsonWebKeyInput} options.publicKey Pass a public key to validate the signature with it. Use for assertion requests
+ * @param {OKP | EC | RSA | JWK | CryptoKey} options.publicKey Pass a public key to validate the signature with it. Use for assertion requests
  * @param {number} options.counter Count of previous attestations/assertions. Currently, not in use
  * @param {('verified' | 'present')[] | 'either'} options.userFactor Test of user verification/presence. Checks the bit 0 and 2 of the flags byte
- * @param {base64 | BufferSource} options.userHandle Checks for equality of user's id (handle)
+ * @param {base64 | ArrayBuffer | Uint8Array} options.userHandle Checks for equality of user's id (handle)
  * @param {string} options.rpId Checks if hashed relying party is equal to the hashed provided one
  * @throws Error If one of the provided predicates fail, including verification of the signature
  */
 export declare function verify(
 	parsed: ParsedAssertionResponse<AssertionResponse> | ParsedAttestationResponse<AttestationResponse>,
 	options: VerifyOptions
-): void | never;
+): Promise<void>;
 
 /**
  * Converts parsed COSE credentialPublicKey in authenticator data to JWK
@@ -196,4 +198,4 @@ export declare function verify(
  */
 export declare function coseToJwk(cose: OKP | EC | RSA): JWK;
 
-export declare function toBuffer(data: base64 | BufferSource): Buffer;
+export declare function toBuffer(data: base64 | ArrayBuffer | Uint8Array): Uint8Array;
