@@ -36,8 +36,8 @@ try {
 try {
     // will return the thrown Error object on failure, if any
     verify(
-        parse({ ... }),
-        {
+        parse(Buffer.from(...)), // `parse` can also take `Buffer` or `string` as input.
+        {                        // its expected to be a JSON-encoded sequence
             type: 'webauthn.get',
             challenge,
             origins: [origin],
