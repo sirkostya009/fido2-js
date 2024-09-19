@@ -34,25 +34,22 @@ try {
 }
 
 try {
-    // will return the thrown Error object on failure, if any
     verify(
         parse(Buffer.from(...)), // `parse` can also take `Buffer` or `string` as input.
         {                        // its expected to be a JSON-encoded sequence
             type: 'webauthn.get',
             challenge,
             origins: [origin],
-            publicKey, // can also pass a jwk or anything that would usually go in node:crypto.verify
+            publicKey, // can also pass a raw cose-encoded credentialPublicKey or anything that would usually go in node:crypto.verify
             counter: 0,
             userFactor: ['verified', 'present'], // can also just pass 'either'
             userHandle: /* base64 string or some byte array */,
         },
     );
 
-    if (err) {
-        console.error('attestation failed', err.message);
-    } else {
-        console.log('attestation succeeded');
-    }
+    console.log('attestation succeeded');
+} catch (err) {
+    console.error('attestation failed', err.message);
 }
 ```
 
