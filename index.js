@@ -1,7 +1,7 @@
-module.exports = {
-	...require('./parse'),
-	...require('./verify'),
-	...require('./utils'),
+exports = {
+	...require("./verify"),
+	...require("./utils"),
+	...require("./parse"),
 };
 
-module.exports.default = module.exports;
+Object.defineProperty(exports, "__esModule", { value: true });

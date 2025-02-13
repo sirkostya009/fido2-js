@@ -1,0 +1,34 @@
+<head>
+
+	<title>Fido.js Test</title>
+
+	<script type="importmap">
+		{
+			"imports": {
+				"cbor-x/decode": "./node_modules/cbor-x/decode.js",
+				"./verify": "./verify.js",
+				"./utils": "./utils.js",
+				"./parse": "./parse.js"
+			}
+		}
+	</script>
+
+</head>
+
+<body>
+
+	<button style="font-size: xx-large;" onclick="attest()">Attest</button>
+	<button style="font-size: xx-large;" onclick="assert()">Assert</button>
+
+</body>
+
+<script type="module">
+	import { parse } from './parse'
+	import { verify } from './verify'
+
+	async function attest() {
+	}
+
+	async function assert() {
+	}
+</script>

@@ -1,32 +1,38 @@
 {
-  "name": "fido2-js",
-  "version": "2.0.0",
-  "license": "MIT",
-  "author": "SirKostya009",
-  "description": "Low-level library for parsing and verifying FIDO2 attestation and assertion responses on the server",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sirkostya009/fido2-js.git"
-  },
-  "keywords": [
-    "webauthn",
-    "passkey",
-    "security key",
-    "yubikey",
-    "u2f",
-    "fido",
-    "fido2",
-    "lib",
-    "authentication",
-    "web authentication",
-    "server"
-  ],
-  "bugs": {
-    "url": "https://github.com/sirkostya009/fido2-js/issues"
-  },
-  "homepage": "https://github.com/sirkostya009/fido2-js#readme",
-  "dependencies": {
-    "cbor-x": "^1.6.0"
-  }
+	"name": "fido2-js",
+	"version": "2.0.0",
+	"license": "MIT",
+	"author": "SirKostya009",
+	"description": "Low-level library for parsing and verifying FIDO2 attestations and assertions",
+	"main": "index.js",
+	"browser": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/sirkostya009/fido2-js.git"
+	},
+	"keywords": [
+		"webauthn",
+		"passkey",
+		"security key",
+		"yubikey",
+		"u2f",
+		"fido",
+		"fido2",
+		"lib",
+		"authentication",
+		"web authentication",
+		"server"
+	],
+	"bugs": {
+		"url": "https://github.com/sirkostya009/fido2-js/issues"
+	},
+	"homepage": "https://github.com/sirkostya009/fido2-js#readme",
+	"dependencies": {
+		"cbor-x": "^1.6.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.9.0",
+		"typescript": "^5.6.3"
+	},
+	"sideEffects": false
 }
