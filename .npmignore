@@ -1,5 +1,0 @@
-test*
-*.ts
-!*.js
-!*.d.ts
-README.md

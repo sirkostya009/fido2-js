@@ -1,7 +1,3 @@
-exports = {
-	...require("./verify"),
-	...require("./utils"),
-	...require("./parse"),
-};
-
-Object.defineProperty(exports, "__esModule", { value: true });
+export * from "./utils.js";
+export * from "./verify.js";
+export * from "./parse.js";

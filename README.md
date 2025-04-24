@@ -2,9 +2,11 @@
 
 `fido2-js` is a low-level library for parsing and verifying FIDO2 attestation and assertion responses.
 
-Works in browsers and Node.js.
+Works in browsers and any `SubtleCrypto`-compatible environment.
 
 Doesn't provide means of generating requests for the client, but that isn't hard to do on your own anyway.
+
+Supports most common methods of attestation (EC, OKP & RSA).
 
 ## Example
 

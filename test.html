@@ -1,34 +1,101 @@
-<head>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>fido2-js</title>
+	</head>
 
-	<title>Fido.js Test</title>
+	<body>
+		<!-- Test by starting an http server in root folder, aka Five Server VS Code extension -->
 
-	<script type="importmap">
-		{
-			"imports": {
-				"cbor-x/decode": "./node_modules/cbor-x/decode.js",
-				"./verify": "./verify.js",
-				"./utils": "./utils.js",
-				"./parse": "./parse.js"
+		<button style="font-size: xx-large">Attest</button>
+		<button style="font-size: xx-large">Assert</button>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"cbor-x/decode": "/node_modules/cbor-x/decode.js"
+				}
 			}
-		}
-	</script>
+		</script>
+		<script type="module">
+			import { parse } from "/parse.js";
+			import { verify } from "/verify.js";
 
-</head>
+			let key;
+			let credential;
 
-<body>
+			async function attest() {
+				const challenge = new Uint8Array(32);
+				crypto.getRandomValues(challenge);
+				console.log("challenge", challenge);
 
-	<button style="font-size: xx-large;" onclick="attest()">Attest</button>
-	<button style="font-size: xx-large;" onclick="assert()">Assert</button>
+				/** @type {PublicKeyCredential} */
+				credential = await navigator.credentials.create({
+					publicKey: {
+						challenge,
+						rp: {
+							name: "Example Corp",
+							id: location.hostname,
+						},
+						user: {
+							id: new Uint8Array([1, 2, 3, 4]),
+							name: "test@example.com",
+							displayName: "Test User",
+						},
+						pubKeyCredParams: [
+							{ type: "public-key", alg: -7 }, // ES256
+							{ type: "public-key", alg: -8 }, // Ed25519
+							{ type: "public-key", alg: -257 }, // RS256
+						],
+						timeout: 60000,
+					},
+				});
 
-</body>
+				console.log(credential.response.getTransports());
+				const parsed = parse(credential.response);
+				console.log(parsed);
+				key = parsed.getJWK();
 
-<script type="module">
-	import { parse } from './parse'
-	import { verify } from './verify'
+				await verify(parsed, {
+					challenge,
+					type: "webauthn.create",
+					origins: ["http://localhost:5500"],
+				});
+			}
 
-	async function attest() {
-	}
+			async function assert() {
+				const challenge = new Uint8Array(32);
+				crypto.getRandomValues(challenge);
+				console.log("challenge", challenge);
 
-	async function assert() {
-	}
-</script>
+				/** @type {PublicKeyCredential} */
+				const credential = await navigator.credentials.get({
+					publicKey: {
+						challenge,
+						rpId: location.hostname,
+						allowCredentials: [credential],
+						timeout: 60000,
+						userVerification: "preferred",
+					},
+				});
+
+				console.log(credential);
+				const parsed = parse(credential.response);
+				console.log(parsed);
+
+				await verify(parsed, {
+					challenge,
+					type: "webauthn.get",
+					origins: ["http://localhost:5500"],
+					publicKey: key, // Using the key from attestation
+				});
+			}
+
+			const [b1, b2] = document.querySelectorAll("button");
+			b1.onclick = attest;
+			b2.onclick = assert;
+		</script>
+	</body>
+</html>

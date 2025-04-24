@@ -4,8 +4,22 @@
 	"license": "MIT",
 	"author": "SirKostya009",
 	"description": "Low-level library for parsing and verifying FIDO2 attestations and assertions",
-	"main": "index.js",
-	"browser": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "node --test --experimental-test-coverage test.js",
+		"test:watch": "node --test --experimental-test-coverage --watch test.js"
+	},
+	"files": [
+		"index.js",
+		"parse.js",
+		"verify.js",
+		"utils.js",
+		"verify.d.ts",
+		"parse.d.ts"
+	],
+	"exports": {
+		"module-sync": "./index.js"
+	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/sirkostya009/fido2-js.git"
@@ -31,8 +45,7 @@
 		"cbor-x": "^1.6.0"
 	},
 	"devDependencies": {
-		"@types/node": "^22.9.0",
-		"typescript": "^5.6.3"
+		"@types/node": "^22.9.0"
 	},
 	"sideEffects": false
 }
