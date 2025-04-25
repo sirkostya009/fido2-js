@@ -104,11 +104,81 @@ export type AttestationResponse =
 			attestationObject: Base64URLString | Uint8Array;
 	  };
 
+export interface PackedAttestation {
+	fmt: "packed";
+	attStmt: {
+		alg: number;
+		sig: Uint8Array;
+		x5c: [Uint8Array, ...Uint8Array] | [];
+	};
+}
+
+export interface TPMAttestation {
+	fmt: "tpm";
+	attStmt: {
+		ver: "2.0";
+		alg?: number;
+		x5c?: [Uint8Array, ...Uint8Array] | [];
+		sig: Uint8Array;
+		certInfo: Uint8Array;
+		pubArea: Uint8Array;
+	};
+}
+
+export interface AndroidKeyAttestation {
+	fmt: "android-key";
+	attStmt: {
+		alg: number;
+		sig: Uint8Array;
+		x5c: [Uint8Array, ...Uint8Array] | [];
+	};
+}
+
+export interface AndroidSafetyNetAttestation {
+	fmt: "android-safetynet";
+	attStmt: {
+		ver: string;
+		response: Uint8Array;
+	};
+}
+
+export interface FIDO2U2FAttestation {
+	fmt: "fido-u2f";
+	attStmt: {
+		x5c: [Uint8Array];
+		sig: Uint8Array;
+	};
+}
+
+export interface NoneAttestation {
+	fmt: "none";
+	attStmt: {};
+}
+
+export interface AppleAttestation {
+	fmt: "apple";
+	attStmt: {
+		x5c: [Uint8Array, ...Uint8Array];
+	};
+}
+
+export interface CompoundAttestation {
+	fmt: "compound";
+	attStmt: (CompoundAttestation & { fmt: Exclude<string, "compound">; [k: any]: any })[];
+}
+
 export interface AttestationObject {
 	clientData: ClientData & { type: "webauthn.create" };
-	attestationObject: {
-		fmt: "packed" | "tpm" | "android-key" | "android-safetynet" | "fido-u2f" | "apple" | "none";
-		attStmt: any;
+	attestationObject: (
+		| PackedAttestation
+		| TPMAttestation
+		| AndroidKeyAttestation
+		| AndroidSafetyNetAttestation
+		| FIDO2U2FAttestation
+		| NoneAttestation
+		| AppleAttestation
+		| CompoundAttestation
+	) & {
 		authData: AuthenticatorData & {
 			attestedCredentialData: AttestedCredentialData;
 		};
