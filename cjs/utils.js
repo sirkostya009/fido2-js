@@ -1,4 +1,4 @@
-/** @import { OKP, EC, RSA, JWK } from './parse' */
+/** @import { JWK, COSE } from './parse' */
 
 /**
  * Converts base64url or base64 string to either a Node.js Buffer (if available) or Uint8Array.
@@ -7,7 +7,7 @@
  * @param {string} [valueName] value name for better error logging
  * @returns {Uint8Array | Buffer} parsed or the very same buffer instance
  */
-export function toBuffer(value, valueName) {
+function toBuffer(value, valueName) {
 	try {
 		return value instanceof ArrayBuffer
 			? new Uint8Array(value)
@@ -35,10 +35,10 @@ export function toBuffer(value, valueName) {
  *
  * You don't need to call this explicitly. You can access the readonly `jwk` property of `credentialPublicKey` in authenticator data
  *
- * @param {OKP | EC | RSA} cose The COSE `credentialPublicKey`
+ * @param {COSE} cose The COSE `credentialPublicKey`
  * @returns {JWK} The JWK representation of the key
  */
-export function coseToJwk(cose) {
+function coseToJwk(cose) {
 	/** @type {Record<number, JWK["kty"]>} */
 	const keyTypes = [, "OKP", "EC", "RSA"];
 
@@ -88,7 +88,7 @@ export function coseToJwk(cose) {
  * @param {Buffer | Uint8Array} buffer
  * @returns {Base64URLString}
  */
-export function bufferToBase64Url(buffer) {
+function bufferToBase64Url(buffer) {
 	return "Buffer" in globalThis && buffer instanceof Buffer
 		? buffer.toString("base64url")
 		: base64ToBase64Url(btoa(String.fromCharCode(...buffer)));
@@ -98,7 +98,7 @@ export function bufferToBase64Url(buffer) {
  * @param {Base64URLString} string
  * @returns {Base64URLString}
  */
-export function base64UrlToBase64(string) {
+function base64UrlToBase64(string) {
 	return string.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat(string.length % 4 && 1 - (string.length % 4));
 }
 
@@ -106,7 +106,7 @@ export function base64UrlToBase64(string) {
  * @param {Base64URLString} string
  * @returns {Base64URLString}
  */
-export function base64ToBase64Url(string) {
+function base64ToBase64Url(string) {
 	return string.replaceAll("+", "-").replaceAll("/", "_").replace(/=*$/, "");
 }
 
@@ -123,7 +123,7 @@ export function base64ToBase64Url(string) {
  * @returns {Algorithm}
  * @throws {Error} On unsupported key type
  */
-export function getAlgorithmFromKey(jwk) {
+function getAlgorithmFromKey(jwk) {
 	switch (jwk.kty) {
 		case "RSA":
 			return {
@@ -142,3 +142,10 @@ export function getAlgorithmFromKey(jwk) {
 			throw new Error(`Unsupported key type: ${jwk.kty}`);
 	}
 }
+
+exports.toBuffer = toBuffer;
+exports.coseToJwk = coseToJwk;
+exports.bufferToBase64Url = bufferToBase64Url;
+exports.base64UrlToBase64 = base64UrlToBase64;
+exports.base64ToBase64Url = base64ToBase64Url;
+exports.getAlgorithmFromKey = getAlgorithmFromKey;

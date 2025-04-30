@@ -1,4 +1,4 @@
-import type { OKP, EC, RSA, JWK, AssertionObject, AttestationObject } from "./parse";
+import type { AssertionObject, AttestationObject, COSE, JWK } from "./parse";
 
 export interface VerifyOptions {
 	/** The type of client data to verify, "webauthn.create" for attestations and "webauthn.get" for assertions */
@@ -8,7 +8,7 @@ export interface VerifyOptions {
 	/** Array of origins to validate against */
 	origins: string[];
 	/** Either a COSE, a JWK or a `CryptoKey` object representing the public key */
-	publicKey?: OKP | EC | RSA | JWK | CryptoKey;
+	publicKey?: COSE | JWK | CryptoKey;
 	/** Previous count of performed validation/attestations. */
 	counter?: number;
 	/** User's factor in authenticator. Checks if the respective flags are set. */

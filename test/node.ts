@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import { parse, verify } from "./index.js";
+import { parse, verify } from "../esm/index.js";
 
 test("main", async function () {
 	const attestation = parse({

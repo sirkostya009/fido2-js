@@ -1,6 +1,6 @@
 import { toBuffer, coseToJwk, getAlgorithmFromKey } from "./utils.js";
 
-/** @import { AssertionObject, AttestationObject, VerifyOptions } from './parse' */
+/** @import { AssertionObject, AttestationObject, VerifyOptions } from './parse.js' */
 
 /**
  * @param {Uint8Array | ArrayBuffer} a1

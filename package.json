@@ -6,19 +6,18 @@
 	"description": "Low-level library for parsing and verifying FIDO2 attestations and assertions",
 	"type": "module",
 	"scripts": {
-		"test": "node --test --experimental-test-coverage test.js",
-		"test:watch": "node --test --experimental-test-coverage --watch test.js"
+		"test": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage ./test/node.ts",
+		"test:watch": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage --watch ./test/node.ts"
 	},
 	"files": [
-		"index.js",
-		"parse.js",
-		"verify.js",
-		"utils.js",
-		"verify.d.ts",
-		"parse.d.ts"
+		"esm",
+		"cjs"
 	],
 	"exports": {
-		"module-sync": "./index.js"
+		".": {
+			"import": "./esm/",
+			"require": "./cjs/"
+		}
 	},
 	"repository": {
 		"type": "git",

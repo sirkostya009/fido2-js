@@ -16,12 +16,31 @@ export interface ClientData {
 	androidPackageName?: string;
 }
 
-export interface JWK {
-	kty: "OKP" | "EC" | "RSA";
-	crv?: "P-256" | "P-384" | "P-521" | "X25519" | "X448" | "Ed25519" | "Ed448" | "secp256k1";
-	alg?: "ES256" | "ES384" | "ES512" | "EdDSA" | "RS256" | "RS384" | "RS512" | "PS512" | "PS384" | "PS256";
-	[k: string]: string | undefined;
-}
+export type JWK =
+	| {
+			kty: "OKP";
+			crv: "X25519" | "X448" | "Ed25519" | "Ed448";
+			alg: "EdDSA" | "PS256" | "PS384" | "PS512";
+			x: Base64URLString;
+			d?: Base64URLString;
+	  }
+	| {
+			kty: "EC";
+			crv: "P-256" | "P-384" | "P-521" | "secp256k1";
+			alg: "ES256" | "ES384" | "ES512";
+			x: Base64URLString;
+			y: Base64URLString;
+			d?: Base64URLString;
+	  }
+	| {
+			kty: "RSA";
+			alg: "RS256" | "RS384" | "RS512";
+			n: Base64URLString;
+			e: Base64URLString;
+			d?: Base64URLString;
+			p?: Base64URLString;
+			q?: Base64URLString;
+	  };
 
 export interface OKP {
 	/** Key type */
@@ -68,11 +87,13 @@ export interface RSA {
 	[-5]?: Uint8Array | Buffer;
 }
 
+export type COSE = OKP | EC | RSA;
+
 export interface AttestedCredentialData {
 	aaguid: Uint8Array | Buffer;
 	credentialIdLength: number;
 	credentialId: Uint8Array | Buffer;
-	credentialPublicKey: OKP | EC | RSA;
+	credentialPublicKey: COSE;
 }
 
 /**
@@ -109,7 +130,7 @@ export interface PackedAttestation {
 	attStmt: {
 		alg: number;
 		sig: Uint8Array;
-		x5c: [Uint8Array, ...Uint8Array] | [];
+		x5c: [Uint8Array, ...Uint8Array[]] | [];
 	};
 }
 
@@ -118,7 +139,7 @@ export interface TPMAttestation {
 	attStmt: {
 		ver: "2.0";
 		alg?: number;
-		x5c?: [Uint8Array, ...Uint8Array] | [];
+		x5c?: [Uint8Array, ...Uint8Array[]] | [];
 		sig: Uint8Array;
 		certInfo: Uint8Array;
 		pubArea: Uint8Array;
@@ -130,7 +151,7 @@ export interface AndroidKeyAttestation {
 	attStmt: {
 		alg: number;
 		sig: Uint8Array;
-		x5c: [Uint8Array, ...Uint8Array] | [];
+		x5c: [Uint8Array, ...Uint8Array[]] | [];
 	};
 }
 
@@ -158,13 +179,13 @@ export interface NoneAttestation {
 export interface AppleAttestation {
 	fmt: "apple";
 	attStmt: {
-		x5c: [Uint8Array, ...Uint8Array];
+		x5c: [Uint8Array, ...Uint8Array[]];
 	};
 }
 
 export interface CompoundAttestation {
 	fmt: "compound";
-	attStmt: (CompoundAttestation & { fmt: Exclude<string, "compound">; [k: any]: any })[];
+	attStmt: (CompoundAttestation & { fmt: Exclude<string, "compound">; [k: string]: any })[];
 }
 
 export interface AttestationObject {

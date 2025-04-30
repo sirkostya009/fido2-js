@@ -1,7 +1,7 @@
 import { decode, decodeMultiple } from "cbor-x/decode-no-eval";
 import { toBuffer, coseToJwk } from "./utils.js";
 
-/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject } from './parse' */
+/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject } from './parse.js' */
 
 /**
  * @param {Buffer | Uint8Array} buf
