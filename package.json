@@ -4,12 +4,12 @@
 	"license": "MIT",
 	"author": "SirKostya009",
 	"description": "Low-level library for parsing and verifying FIDO2 attestations and assertions",
-	"type": "module",
 	"scripts": {
 		"test": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage ./test/node.ts",
 		"test:watch": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage --watch ./test/node.ts"
 	},
 	"files": [
+		"types.d.ts",
 		"esm",
 		"cjs"
 	],
@@ -33,8 +33,7 @@
 		"fido2",
 		"lib",
 		"authentication",
-		"web authentication",
-		"server"
+		"web authentication"
 	],
 	"bugs": {
 		"url": "https://github.com/sirkostya009/fido2-js/issues"

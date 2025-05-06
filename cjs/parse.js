@@ -1,7 +1,173 @@
 const { decode, decodeMultiple } = require("cbor-x/decode-no-eval");
-const { toBuffer, coseToJwk } = require("./utils.js");
+const { bufferToBase64Url, toBuffer } = require("./utils.js");
+/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, COSE, JWK } from '../types' */
 
-/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject } from './parse.js' */
+/**
+ * Parsing function used by `assertion` and `attestation` functions.
+ *
+ * This is great for playing and figuring out with WebAuthn, in production codebases use the two aformentioned alternatives as they also do verification.
+ *
+ * @param {AttestationResponse | AssertionResponse} response
+ * @returns {{ response: AssertionObject | AttestationObject, rawClientData: Uint8Array | Buffer, rawAuthenticatorData: Uint8Array | Buffer }}
+ * @throws {Error}
+ */
+function parse(response) {
+	const clientDataJSON = response.clientDataJSON;
+
+	/** @type {ClientData} */
+	const clientData = JSON.parse(
+		"Buffer" in globalThis && clientDataJSON instanceof Buffer
+			? clientDataJSON
+			: clientDataJSON instanceof Uint8Array
+			? String.fromCharCode(...clientDataJSON)
+			: clientDataJSON instanceof ArrayBuffer
+			? String.fromCharCode(...new Uint8Array(clientDataJSON))
+			: typeof clientDataJSON === "string"
+			? atob(clientDataJSON)
+			: undefined
+	);
+
+	switch (clientData.type) {
+		case "webauthn.create":
+			if (!("attestationObject" in response)) {
+				throw new Error(`attestationObject not present on a "webauthn.create" type`);
+			}
+
+			const { attestationObject } = response;
+
+			const { fmt, attStmt, authData } = decode(toBuffer(attestationObject, "response.attestationObject"));
+
+			const parsedAuthData = parseAuthenticatorData(authData);
+
+			return {
+				response: {
+					clientData,
+					attestationObject: {
+						fmt,
+						attStmt,
+						authData: parsedAuthData,
+					},
+					/** @this { AttestationObject} */
+					jwk() {
+						return coseToJwk(this.attestationObject.authData.attestedCredentialData.credentialPublicKey);
+					},
+				},
+				rawClientData: toBuffer(clientDataJSON),
+				rawAuthenticatorData: authData,
+			};
+		case "webauthn.get":
+			if (!("authenticatorData" in response)) {
+				throw new Error(`authenticatorData not present on a "webauthn.get" type`);
+			}
+
+			const { authenticatorData, signature, userHandle } = response;
+			const rawAuthenticatorData = toBuffer(authenticatorData, "response.authenticatorData");
+
+			return {
+				response: {
+					clientData,
+					authenticatorData: parseAuthenticatorData(rawAuthenticatorData),
+					signature,
+					userHandle,
+				},
+				rawClientData: toBuffer(clientDataJSON),
+				rawAuthenticatorData,
+			};
+		default:
+			throw new Error("Unknown clientData type: " + clientData.type);
+	}
+}
+
+module.exports = parse;
+
+/**
+ * Converts parsed COSE credentialPublicKey in authenticator data to JWK
+ *
+ * This is useful if you wish to export the public key to a more portable format
+ *
+ * You don't need to call this explicitly. You can access the readonly `jwk` property of `credentialPublicKey` in authenticator data
+ *
+ * @param {COSE} cose The COSE `credentialPublicKey`
+ * @returns {JWK} The JWK representation of the key
+ */
+function coseToJwk(cose) {
+	/** @type {Record<number, JWK["kty"]>} */
+	const keyTypes = [, "OKP", "EC", "RSA"];
+
+	/** @type {Record<number, JWK["crv"]>} */
+	const ellipticCurves = [, "P-256", "P-384", "P-521", "X25519", "X448", "Ed25519", "Ed448", "secp256k1"];
+
+	/** @type {Record<number, JWK["alg"]>} */
+	const algorithms = {
+		[-7]: "ES256",
+		[-35]: "ES384",
+		[-36]: "ES512",
+		[-8]: "EdDSA",
+		[-257]: "RS256",
+		[-258]: "RS384",
+		[-259]: "RS512",
+		[-39]: "PS512",
+		[-38]: "PS384",
+		[-37]: "PS256",
+	};
+
+	/** @type {JWK} */
+	const jwk = {
+		kty: keyTypes[cose[1]],
+		alg: algorithms[cose[3]],
+	};
+
+	switch (cose[1]) {
+		case 2: // EC
+			jwk.y = cose[-3] instanceof Uint8Array ? bufferToBase64Url(cose[-3]) : cose[-3];
+		case 1: // OKP
+			jwk.crv = ellipticCurves[cose[-1]];
+			jwk.x = bufferToBase64Url(cose[-2]);
+			if (cose[-4]) jwk.d = bufferToBase64Url(cose[-4]);
+			break;
+		case 3: // RSA
+			jwk.n = bufferToBase64Url(cose[-1]);
+			jwk.e = bufferToBase64Url(cose[-2]);
+			if (cose[-3]) jwk.d = bufferToBase64Url(cose[-3]);
+			if (cose[-4]) jwk.p = bufferToBase64Url(cose[-4]);
+			if (cose[-5]) jwk.q = bufferToBase64Url(cose[-5]);
+	}
+
+	return jwk;
+}
+
+/**
+ * Parses an Algorithm object from a JWK. Useful for converting JWK to CryptoKey using `crypto.subtle.importKey`.
+ *
+ * Example:
+ * ```js
+ * const key = await crypto.subtle.importKey('jwk', jwk, getAlgorithmFromKey(jwK), true, ['verify'])
+ *
+ * await crypto.subtle.verify(key.algorithm, key, signature, data)
+ * ```
+ * @param {JWK} jwk
+ * @returns {Algorithm}
+ * @throws {Error} On unsupported key type
+ */
+function getAlgorithmFromKey(jwk) {
+	switch (jwk.kty) {
+		case "RSA":
+			return {
+				name: "RSASSA-PKCS1-v1_5",
+				hash: { name: `SHA-${jwk.alg.slice(-3)}` },
+			};
+		case "OKP":
+			return { name: jwk.crv };
+		case "EC":
+			return {
+				name: "ECDSA",
+				hash: { name: `SHA-${jwk.alg.slice(-3)}` },
+				namedCurve: jwk.crv,
+			};
+		default:
+			throw new Error(`Unsupported key type: ${jwk.kty}`);
+	}
+}
 
 /**
  * @param {Buffer | Uint8Array} buf
@@ -44,100 +210,6 @@ function parseAuthenticatorData(buf) {
 	return result;
 }
 
-/**
- * @param {AttestationResponse | AssertionResponse} response
- * @returns {AssertionObject | AttestationObject}
- */
-function parse(response) {
-	const clientDataJSON = response.clientDataJSON;
-
-	/** @type {ClientData} */
-	const clientData = JSON.parse(
-		"Buffer" in globalThis && clientDataJSON instanceof Buffer
-			? clientDataJSON
-			: clientDataJSON instanceof Uint8Array
-			? String.fromCharCode(...clientDataJSON)
-			: clientDataJSON instanceof ArrayBuffer
-			? String.fromCharCode(...new Uint8Array(clientDataJSON))
-			: typeof clientDataJSON === "string"
-			? atob(clientDataJSON)
-			: undefined
-	);
-
-	switch (clientData.type) {
-		case "webauthn.create":
-			if (!("attestationObject" in response)) {
-				throw new Error(`attestationObject not present on a "webauthn.create" type`);
-			}
-
-			const { attestationObject } = response;
-
-			const { fmt, attStmt, authData } = decode(toBuffer(attestationObject, "response.attestationObject"));
-
-			const parsedAuthData = parseAuthenticatorData(authData);
-
-			return Object.defineProperties(
-				{
-					clientData,
-					attestationObject: {
-						fmt,
-						attStmt,
-						authData: parsedAuthData,
-					},
-					/** @this {AttestationObject} */
-					getJWK() {
-						return coseToJwk(this.attestationObject.authData.attestedCredentialData.credentialPublicKey);
-					},
-				},
-				{
-					rawClientData: {
-						value: toBuffer(clientDataJSON),
-						configurable: false,
-						enumerable: false,
-						writable: false,
-					},
-					rawAuthenticatorData: {
-						value: authData,
-						configurable: false,
-						enumerable: false,
-						writable: false,
-					},
-				}
-			);
-		case "webauthn.get":
-			if (!("authenticatorData" in response)) {
-				throw new Error(`authenticatorData not present on a "webauthn.get" type`);
-			}
-
-			const { authenticatorData, signature, userHandle } = response;
-
-			return Object.defineProperties(
-				{
-					clientData,
-					authenticatorData: parseAuthenticatorData(
-						toBuffer(authenticatorData, "response.authenticatorData")
-					),
-					signature,
-					userHandle,
-				},
-				{
-					rawClientData: {
-						value: toBuffer(clientDataJSON),
-						configurable: false,
-						enumerable: false,
-						writable: false,
-					},
-					rawAuthenticatorData: {
-						value: toBuffer(authenticatorData),
-						configurable: false,
-						enumerable: false,
-						writable: false,
-					},
-				}
-			);
-		default:
-			throw new Error("Unknown clientData type: " + clientData.type);
-	}
-}
-
-exports.parse = parse;
+module.exports.parse = parse;
+module.exports.coseToJwk = coseToJwk;
+module.exports.getAlgorithmFromKey = getAlgorithmFromKey;

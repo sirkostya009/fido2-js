@@ -26,10 +26,6 @@ for file in esm/*.js; do
 
 	echo "" >> "$out"
 	for id in "${ids[@]}"; do
-		echo "exports.$id = $id;" >> "$out"
+		echo "module.exports.$id = $id;" >> "$out"
 	done
 done
-
-echo 'module.exports = { ...require("./parse.js"), ...require("./verify.js"), ...require("./utils.js") };' > cjs/index.js
-
-cp esm/*.d.ts cjs/

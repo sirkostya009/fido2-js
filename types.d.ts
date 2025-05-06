@@ -204,7 +204,7 @@ export interface AttestationObject {
 			attestedCredentialData: AttestedCredentialData;
 		};
 	};
-	getJWK(): JWK;
+	jwk(): JWK;
 }
 
 export type AssertionResponse =
@@ -223,16 +223,18 @@ export interface AssertionObject {
 	userHandle: Uint8Array | Buffer | null;
 }
 
-/**
- * Method that parses attestation.
- *
- * @throws {Error} On malformed input or if clientData isn't of type `webauthn.create` or `webauthn.get`
- */
-export declare function parse(r: AttestationResponse): AttestationObject;
+export interface AttestationOptions {
+	/** Array of origins to validate against */
+	origins?: string[];
+	/** User's factor in authenticator. Checks if the respective flags are set. */
+	userFactor?: ("verified" | "present")[] | "either";
+	/** Relying party's id as was passed to the authenticator */
+	rpId?: string;
+}
 
-/**
- * Method that parses assertion responses.
- *
- * @throws {Error} On malformed input or if clientData isn't of type `webauthn.create` or `webauthn.get`
- */
-export declare function parse(r: AssertionResponse): AssertionObject;
+export interface AssertionOptions extends AttestationOptions {
+	/** Previous count of performed validation/attestations. */
+	signCount?: number;
+	/** User's id as returned by the relying party. */
+	userHandle?: Base64URLString | ArrayBuffer | Uint8Array;
+}
