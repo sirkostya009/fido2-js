@@ -224,6 +224,8 @@ export interface AssertionObject {
 }
 
 export interface AttestationOptions {
+	/** The challenge used for attestation/assertion */
+	challenge: Base64URLString | Uint8Array;
 	/** Array of origins to validate against */
 	origins?: string[];
 	/** User's factor in authenticator. Checks if the respective flags are set. */
@@ -233,6 +235,8 @@ export interface AttestationOptions {
 }
 
 export interface AssertionOptions extends AttestationOptions {
+	/** Public key acquired from attestation */
+	publicKey: COSE | JWK | CryptoKey;
 	/** Previous count of performed validation/attestations. */
 	signCount?: number;
 	/** User's id as returned by the relying party. */

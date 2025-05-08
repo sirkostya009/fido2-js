@@ -3,7 +3,7 @@
 	"version": "2.0.0",
 	"license": "MIT",
 	"author": "SirKostya009",
-	"description": "Low-level library for parsing and verifying FIDO2 attestations and assertions",
+	"description": "Library for parsing and verifying FIDO2 WebAuthn attestations and assertions",
 	"scripts": {
 		"test": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage ./test/node.ts",
 		"test:watch": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage --watch ./test/node.ts"
@@ -15,8 +15,16 @@
 	],
 	"exports": {
 		".": {
-			"import": "./esm/",
-			"require": "./cjs/"
+			"import": "./esm/index.js",
+			"require": "./cjs/index.js"
+		},
+		"./parse": {
+			"import": "./esm/parse.js",
+			"require": "./cjs/parse.js"
+		},
+		"./utils": {
+			"import": "./esm/utils.js",
+			"require": "./cjs/utils.js"
 		}
 	},
 	"repository": {

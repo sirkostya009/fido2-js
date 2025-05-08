@@ -7,13 +7,10 @@ const quoteString = (s) => (typeof s === "string" ? `"${s}"` : s);
 /**
  * Parses and validates attestation responses
  *
- * @param {AttestationResponse} a
- * @param {Base64URLString | Uint8Array} challenge The challenge that was previously used for the attestation
- * @param {AttestationOptions} [opts] Optional yet important additional checks
  * @returns {Promise<AttestationObject>}
  * @throws {Error}
  */
-async function attestation(a, challenge, opts = {}) {
+async function attestation(/** @type {AttestationResponse} */ a, /** @type {AttestationOptions} */ opts) {
 	const { response, rawAuthenticatorData, rawClientData } = parse(a);
 
 	if (response.clientData.type !== "webauthn.create") {
@@ -51,14 +48,10 @@ async function attestation(a, challenge, opts = {}) {
 /**
  * Parses and validates assertion responses
  *
- * @param {AssertionResponse} a
- * @param {Base64URLString | Uint8Array} challenge The challenge that was previously used for the assertion
- * @param {COSE | JWK | CryptoKey} publicKey Previously acquired key from attestation
- * @param {AssertionOptions} [opts] Optional yet important additional checks
  * @returns {Promise<AssertionObject>}
  * @throws {Error}
  */
-async function assertion(a, challenge, publicKey, opts = {}) {
+async function assertion(/** @type {AssertionResponse} */ a, /** @type {AssertionOptions} */ opts) {
 	const { response, rawAuthenticatorData, rawClientData } = parse(a);
 
 	if (response.clientData.type !== "webauthn.get") {
@@ -107,12 +100,7 @@ async function assertion(a, challenge, publicKey, opts = {}) {
 	return response;
 }
 
-/**
- * @param {Uint8Array | ArrayBuffer} a1
- * @param {Uint8Array | ArrayBuffer} a2
- * @returns {boolean}
- */
-function equals(a1, a2) {
+function equals(/** @type {Uint8Array | ArrayBuffer} */ a1, /** @type {Uint8Array | ArrayBuffer} */ a2) {
 	if (a1 instanceof ArrayBuffer) {
 		a1 = new Uint8Array(a1);
 	}
@@ -135,11 +123,7 @@ function equals(a1, a2) {
 	return true;
 }
 
-/**
- * @param {Base64URLString} clientChallenge
- * @param {Base64URLString} challenge
- */
-function verifyChallenge(clientChallenge, challenge) {
+function verifyChallenge(/** @type {Base64URLString} */ clientChallenge, /** @type {Base64URLString} */ challenge) {
 	if (
 		challenge !== clientChallenge &&
 		!equals(toBuffer(challenge, "challenge"), toBuffer(clientChallenge, "clientData.challenge"))
@@ -150,11 +134,7 @@ function verifyChallenge(clientChallenge, challenge) {
 	}
 }
 
-/**
- * @param {AuthenticatorData['flags']}
- * @param {string} userFactor
- */
-function verifyUserFactor({ uv, up }, userFactor) {
+function verifyUserFactor(/** @type {AuthenticatorData['flags']} */ { uv, up }, /** @type {string} */ userFactor) {
 	if (userFactor === "either") {
 		if (!uv && !up) {
 			throw new Error("User was not present nor verified");
@@ -172,11 +152,7 @@ function verifyUserFactor({ uv, up }, userFactor) {
 	}
 }
 
-/**
- * @param {string} origin
- * @param {string[]} origins
- */
-function verifyOrigins(origin, origins) {
+function verifyOrigins(/** @type {string} */ origin, /** @type {string[]} */ origins) {
 	if (!Array.isArray(origins) || origins.length === 0) {
 		throw new Error("origins must be an array with at least one element");
 	}
@@ -186,11 +162,7 @@ function verifyOrigins(origin, origins) {
 	}
 }
 
-/**
- * @param {Uint8Array | Buffer} rpIdHash
- * @param {string} rpId
- */
-async function verifyRpId(rpIdHash, rpId) {
+async function verifyRpId(/** @type {Uint8Array | Buffer} */ rpIdHash, /** @type {string} */ rpId) {
 	const hash = await crypto.subtle.digest(
 		"sha-256",
 		Uint8Array.from(rpId, (c) => c.charCodeAt(0))
@@ -201,11 +173,10 @@ async function verifyRpId(rpIdHash, rpId) {
 	}
 }
 
-/**
- * @param {Uint8Array | Buffer} userHandle
- * @param {Base64URLString | ArrayBuffer | Uint8Array} uh
- */
-function verifyUserHandle(userHandle, uh) {
+function verifyUserHandle(
+	/** @type {Uint8Array | Buffer} */ userHandle,
+	/** @type {Base64URLString | ArrayBuffer | Uint8Array} */ uh
+) {
 	if (!userHandle) {
 		throw new Error("No user handle provided");
 	}
@@ -217,11 +188,7 @@ function verifyUserHandle(userHandle, uh) {
 	}
 }
 
-/**
- * @param {number} signCount
- * @param {number} counter
- */
-function verifySignCount(signCount, counter) {
+function verifySignCount(/** @type {number} */ signCount, /** @type {number} */ counter) {
 	if (signCount < counter) {
 		throw new Error(`signCount lower than provided, got: ${signCount}, expected: ${counter}`);
 	} else if (signCount === counter) {

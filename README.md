@@ -1,78 +1,144 @@
 # FIDO2.js
 
-`fido2-js` is a low-level library for parsing and verifying FIDO2 attestation and assertion responses.
+`fido2-js` is a simple library for parsing and verifying FIDO2 attestation and assertion responses.
 
-Works in browsers and any `SubtleCrypto`-compatible environment.
+Depends on `cbor-x`, and `SubtleCrypto` API. Works in browsers.
 
 Doesn't provide means of generating requests for the client, but that isn't hard to do on your own anyway.
 
-Supports most common methods of attestation (EC, OKP & RSA).
+Supports common methods of attestation such as EC, OKP and RSA.
 
-## Example
+## Usage
+
+### Attestation
 
 ```js
-const { parse, verify } = require('fido2-js');
+const { attestation } = require('fido2-js');
 // or
-import { parse, verify } from 'fido2-js';
+import { attestation } from 'fido2-js';
 
-try {
-    // for the returned object to actually be of attestation,
-    // client data type must be 'webauthn.create'.
-    // it should be also stated that parse method can throw on malformed input
-    const parsedAttestation = parse({ ... });
-
-    await verify(parsedAttestation, {
-        type: 'webauthn.create',
+// for the returned object to actually be of attestation,
+// client data type must be 'webauthn.create'.
+// it should be also stated that parse method can throw on malformed input
+const parsed = await attestation(
+    {
+        clientDataJSON: '...',
+        attestationObject: '...',
+    },
+    {
         challenge,
         origins: [origin],
         userFactor: ['verified', 'present'],
-    });
+    }
+).catch(err => err);
 
-    publicKey = parsedAttestation.jwk();
+if (parsed instanceof Error) { // safe to assume Error
+    console.error(parsed);
+} else {
+    publicKey = parsed.jwk();
 
-    console.log('assertion succeeded');
-} catch (err) {
-    console.error('assertion failed', err.message);
-}
-
-try {
-    await verify(
-        parse({ ... }),
-        {
-            type: 'webauthn.get',
-            challenge,
-            origins: [origin],
-            publicKey, // can also pass a raw credentialPublicKey or a CryptoKey object
-            counter: 0,
-            userFactor: ['verified', 'present'], // can also just pass 'either'
-            userHandle: /* base64 string or some byte array */,
-        },
-    );
-
-    console.log('attestation succeeded');
-} catch (err) {
-    console.error('attestation failed', err.message);
+    console.log('attestation succeeded', parsed);
 }
 ```
 
-## Security considerations
+### Assertion
 
-This library is not perfect. `parse` can potentially clog Node's event loop if the
-provided CBOR takes too long to parse, opening up a possibility for DoS attacks.
-To mitigate that you could try limiting the payload size your server can receive;
-rate limiting webauthn endpoints, etc.
+```js
+const { assertion } = require('fido2-js');
+// or
+import { assertion } from 'fido2-js';
 
-## TODO:
-- Verify attestation formats. Help needed!
-- Support more key types in JWK parser. (Currently only EC, OKP and RSA are supported).
+const parsed = await assertion(
+    {
+        clientDataJSON: '...',
+        authenticatorData: '...',
+        signature: '...',
+        userHandle: '...',
+    },
+    {
+        challenge,
+        origins: [origin],
+        publicKey, // can also pass a COSE credentialPublicKey or a CryptoKey object
+        counter: 0,
+        userFactor: ['verified', 'present'], // can also just pass 'either'
+        userHandle: /* base64 string or some byte array */,
+    }
+).catch(err => err);
 
-## Contributing
+if (parsed instanceof Error) { // safe to assume Error
+    console.error(parsed);
+} else {
+    console.log('assertion succeeded', parsed);
+}
+```
 
-If you encounter any bugs or imperfections, don't hesitate to open a GitHub issue.
+### Browser
 
-Also, if you're knowledgeable in FIDO2 protocol, you're invited to audit the code and in case of finding
-nuances or potential for improvement open a PR. If it is parsing or verification that you're changing,
-then supply a link to the respective WebAuthn resource according to which you made the change.
+If you're not utilizing any bundlers and wish to use this library in a browser, you will need to set up an importmap for `cbor-x` dependency.
+
+You can easily pull this library from jsdeliver:
+
+```html
+<script type="module">
+    import { assertion, attestation } from 'https://cdn.jsdelivr.net/npm/fido2-js@2.0.0/+esm';
+    import parse from 'https://cdn.jsdelivr.net/npm/fido2-js@2.0.0/parse.js/+esm';
+
+    // ...
+</script>
+```
+
+If you don't use a fancy CDN that automatically minifies and bundles libraries (such as jsdelivr), you will have to provide an importmap for `cbor-x`.
+
+```html
+<script type="importmap">
+    {
+        "imports": {
+            "cbor-x/decode-no-eval": "https://cdn.jsdelivr.net/npm/cbor-x@1.6.0/decode.min.js"
+        }
+    }
+</script>
+```
+
+Then, you can import the library itself.
+
+```html
+<script>
+    // note the /esm/ folder for ESM imports
+    import {} from '/path/to/lib/esm/index.js';
+    import parse from '/path/to/lib/esm/parse.js';
+
+    // ...
+</script>
+```
+
+### Bonus
+
+There's plenty of WebAuthn tutorials out there, but most of them only show basic flow of authentication, without revealing the much-needed-to-know details.
+
+If you're new to FIDO2 WebAuthn, I suggest playing with the parse function to better understand the protocol and how it works.
+MDN's WebAuthn documentation is your best friend for this: [Web Authentication API | MDN](https://developer.mozilla.org/docs/Web/API/Web_Authentication_API)
+
+```js
+import parse from 'fido2-js/parse';
+
+// the parse function lets you only parse the response returned by authenticator,
+// letting you a view into the structure of said object and visually understand
+// what you're working with, I wish I had this when starting out!
+
+// mere example. your function (endpoint on the server) implementation would be different
+function endpoint(body) {
+    // a very detailed explanation of all of these things can found at https://www.w3.org/TR/webauthn-3/
+    // the response variable is returned by assertion and attestation functions
+    const { response, rawAuthenticatorData, rawClientData } = parse(body);
+
+    console.log(response, rawAuthenticatorData, rawClientData);
+}
+```
+
+You can also view a browser-only example at [browser.html](/test/browser.html).
+
+> **Note:**  
+> On Linux, if you don't have a physical security key available, you may need an authenticator emulator. Check out [virtual-fido](https://github.com/bulwarkid/virtual-fido).
 
 ## License
 

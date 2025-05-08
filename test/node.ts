@@ -1,5 +1,5 @@
-const { test } = require("node:test");
-const fido = require("../cjs/index.js");
+import { test } from "node:test";
+import * as fido from "../esm/index.js";
 
 test("main", async function () {
 	const attestation = await fido.attestation(
@@ -9,8 +9,8 @@ test("main", async function () {
 			attestationObject:
 				"o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVikSZYN5YgOjGh0NBcPZHZgW4/krrmihjLHmVzzuoMdl2NFAAAAAAiYcFjK3EuBtuEw3lDcvpYAIKaanj9Z2nDjOcbFgTKWEUD3fq6eMdQ0V0bUN2MnIy68pQECAyYgASFYIGsGWLc2e2gCyX8yBAxgiOggYaajnziK1bpE9YE+mxbMIlgg1xFrTD6P8ay6qqacucmycMH4lLqw8qneqwcoNTVVsrY=",
 		},
-		"W29iamVjdCBBcnJheUJ1ZmZlcl0=",
 		{
+			challenge: "W29iamVjdCBBcnJheUJ1ZmZlcl0=",
 			userFactor: ["verified", "present"],
 			origins: ["http://localhost:5500"],
 			rpId: "localhost",
@@ -28,9 +28,9 @@ test("main", async function () {
 				"MEUCIQCSRurZwBUIbSBFQmLPBnGJLPcFLnf6EyIML/D54AGFlAIgag1hkkxK1ZBtRP7+AyaiYbkpms05G5VKfh9eQDYQ+XU=",
 			userHandle: "BA==",
 		},
-		"W29iamVjdCBBcnJheUJ1ZmZlcl0=",
-		attestation.jwk(),
 		{
+			challenge: "W29iamVjdCBBcnJheUJ1ZmZlcl0=",
+			publicKey: attestation.jwk(),
 			userFactor: ["verified", "present"],
 			origins: ["http://localhost:5500"],
 			rpId: "localhost",

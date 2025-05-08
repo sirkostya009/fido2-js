@@ -7,7 +7,7 @@
 	</head>
 
 	<body>
-		<!-- Test by starting an http server in root folder, aka Five Server VS Code extension -->
+		<!-- Test by starting an http server in root folder, aka Live Server VS Code extension -->
 
 		<button style="font-size: xx-large">Attest</button>
 		<button style="font-size: xx-large">Assert</button>
@@ -15,16 +15,14 @@
 		<script type="importmap">
 			{
 				"imports": {
-					"cbor-x/decode": "/node_modules/cbor-x/decode.js"
+					"cbor-x/decode-no-eval": "/node_modules/cbor-x/decode.js"
 				}
 			}
 		</script>
 		<script type="module">
-			import { parse } from "/parse.js";
-			import { verify } from "/verify.js";
+			import { attestation, assertion } from "/esm/index.js";
 
 			let key;
-			let credential;
 
 			async function attest() {
 				const challenge = new Uint8Array(32);
@@ -32,11 +30,11 @@
 				console.log("challenge", challenge);
 
 				/** @type {PublicKeyCredential} */
-				credential = await navigator.credentials.create({
+				const credential = await navigator.credentials.create({
 					publicKey: {
 						challenge,
 						rp: {
-							name: "Example Corp",
+							name: "Example",
 							id: location.hostname,
 						},
 						user: {
@@ -54,15 +52,9 @@
 				});
 
 				console.log(credential.response.getTransports());
-				const parsed = parse(credential.response);
-				console.log(parsed);
-				key = parsed.getJWK();
-
-				await verify(parsed, {
-					challenge,
-					type: "webauthn.create",
-					origins: ["http://localhost:5500"],
-				});
+				const response = await attestation(credential.response, { challenge });
+				console.log(response);
+				key = response.jwk();
 			}
 
 			async function assert() {
@@ -82,15 +74,8 @@
 				});
 
 				console.log(credential);
-				const parsed = parse(credential.response);
-				console.log(parsed);
-
-				await verify(parsed, {
-					challenge,
-					type: "webauthn.get",
-					origins: ["http://localhost:5500"],
-					publicKey: key, // Using the key from attestation
-				});
+				const response = await assertion(credential.response, { challenge, publicKey: key });
+				console.log(response);
 			}
 
 			const [b1, b2] = document.querySelectorAll("button");

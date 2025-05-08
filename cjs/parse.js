@@ -7,11 +7,10 @@ const { bufferToBase64Url, toBuffer } = require("./utils.js");
  *
  * This is great for playing and figuring out with WebAuthn, in production codebases use the two aformentioned alternatives as they also do verification.
  *
- * @param {AttestationResponse | AssertionResponse} response
  * @returns {{ response: AssertionObject | AttestationObject, rawClientData: Uint8Array | Buffer, rawAuthenticatorData: Uint8Array | Buffer }}
  * @throws {Error}
  */
-function parse(response) {
+function parse(/** @type {AttestationResponse | AssertionResponse} */ response) {
 	const clientDataJSON = response.clientDataJSON;
 
 	/** @type {ClientData} */
@@ -47,7 +46,7 @@ function parse(response) {
 						attStmt,
 						authData: parsedAuthData,
 					},
-					/** @this { AttestationObject} */
+					/** @this {AttestationObject} */
 					jwk() {
 						return coseToJwk(this.attestationObject.authData.attestedCredentialData.credentialPublicKey);
 					},
@@ -145,11 +144,10 @@ function coseToJwk(cose) {
  *
  * await crypto.subtle.verify(key.algorithm, key, signature, data)
  * ```
- * @param {JWK} jwk
  * @returns {Algorithm}
  * @throws {Error} On unsupported key type
  */
-function getAlgorithmFromKey(jwk) {
+function getAlgorithmFromKey(/** @type {JWK} */ jwk) {
 	switch (jwk.kty) {
 		case "RSA":
 			return {
@@ -169,10 +167,7 @@ function getAlgorithmFromKey(jwk) {
 	}
 }
 
-/**
- * @param {Buffer | Uint8Array} buf
- */
-function parseAuthenticatorData(buf) {
+function parseAuthenticatorData(/** @type {Buffer | Uint8Array} */ buf) {
 	/** @type {AuthenticatorData} */
 	const result = {
 		rpIdHash: buf.subarray(0, 32),

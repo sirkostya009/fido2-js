@@ -16,39 +16,26 @@ function toBuffer(value, valueName) {
 			: Uint8Array.from(atob(base64UrlToBase64(value)), (c) => c.charCodeAt(0));
 	} catch (err) {
 		throw new Error(
-			(valueName ?? value ?? `"value"`) +
-				" must be either an ArrayBuffer coercible or a base64 string: " +
-				err.message,
-			{
-				cause: err,
-			}
+			(valueName ?? value ?? `"value"`) + " must be either an ArrayBuffer coercible or a base64 string",
+			{ cause: err }
 		);
 	}
 }
 
-/**
- * @param {Buffer | Uint8Array} buffer
- * @returns {Base64URLString}
- */
-function bufferToBase64Url(buffer) {
+/** @returns {Base64URLString} */
+function bufferToBase64Url(/** @type {Buffer | Uint8Array} */ buffer) {
 	return "Buffer" in globalThis && buffer instanceof Buffer
 		? buffer.toString("base64url")
 		: base64ToBase64Url(btoa(String.fromCharCode(...buffer)));
 }
 
-/**
- * @param {Base64URLString} string
- * @returns {Base64URLString}
- */
-function base64UrlToBase64(string) {
+/** @returns {Base64URLString} */
+function base64UrlToBase64(/** @type {Base64URLString} */ string) {
 	return string.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat(string.length % 4 && 1 - (string.length % 4));
 }
 
-/**
- * @param {Base64URLString} string
- * @returns {Base64URLString}
- */
-function base64ToBase64Url(string) {
+/** @returns {Base64URLString} */
+function base64ToBase64Url(/** @type {Base64URLString} */ string) {
 	return string.replaceAll("+", "-").replaceAll("/", "_").replace(/=*$/, "");
 }
 
