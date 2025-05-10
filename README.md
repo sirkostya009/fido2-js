@@ -74,8 +74,6 @@ if (parsed instanceof Error) { // safe to assume Error
 
 ### Browser
 
-If you're not utilizing any bundlers and wish to use this library in a browser, you will need to set up an importmap for `cbor-x` dependency.
-
 You can easily pull this library from jsdeliver:
 
 ```html
@@ -87,7 +85,7 @@ You can easily pull this library from jsdeliver:
 </script>
 ```
 
-If you don't use a fancy CDN that automatically minifies and bundles libraries (such as jsdelivr), you will have to provide an importmap for `cbor-x`.
+If you don't use a fancy CDN that automatically minifies and bundles libraries (like jsdelivr), you will have to provide an importmap for `cbor-x`.
 
 ```html
 <script type="importmap">
@@ -97,11 +95,6 @@ If you don't use a fancy CDN that automatically minifies and bundles libraries (
         }
     }
 </script>
-```
-
-Then, you can import the library itself.
-
-```html
 <script>
     // note the /esm/ folder for ESM imports
     import {} from '/path/to/lib/esm/index.js';
@@ -115,7 +108,7 @@ Then, you can import the library itself.
 
 There's plenty of WebAuthn tutorials out there, but most of them only show basic flow of authentication, without revealing the much-needed-to-know details.
 
-If you're new to FIDO2 WebAuthn, I suggest playing with the parse function to better understand the protocol and how it works.
+If you're new to FIDO2 WebAuthn, I suggest playing with the `parse` function to better understand the protocol and how it works.
 MDN's WebAuthn documentation is your best friend for this: [Web Authentication API | MDN](https://developer.mozilla.org/docs/Web/API/Web_Authentication_API)
 
 ```js
