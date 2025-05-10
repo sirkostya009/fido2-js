@@ -60,7 +60,7 @@ export async function assertion(/** @type {AssertionResponse} */ a, /** @type {A
 		);
 	}
 
-	verifyChallenge(response.clientData.challenge, challenge);
+	verifyChallenge(response.clientData.challenge, opts.challenge);
 
 	let key = opts.publicKey;
 
