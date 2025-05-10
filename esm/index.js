@@ -19,7 +19,7 @@ export async function attestation(/** @type {AttestationResponse} */ a, /** @typ
 		);
 	}
 
-	verifyChallenge(response.clientData.challenge, challenge);
+	verifyChallenge(response.clientData.challenge, opts.challenge);
 
 	switch (response.attestationObject.fmt) {
 		case "packed": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-packed-attestation
@@ -62,7 +62,7 @@ export async function assertion(/** @type {AssertionResponse} */ a, /** @type {A
 
 	verifyChallenge(response.clientData.challenge, challenge);
 
-	let key = publicKey;
+	let key = opts.publicKey;
 
 	if ("1" in key) {
 		key = coseToJwk(key);
@@ -158,7 +158,7 @@ function verifyOrigins(/** @type {string} */ origin, /** @type {string[]} */ ori
 	}
 
 	if (!origins.includes(origin)) {
-		throw new Error(`Origin ${quoteString(clientData.origin)} not allowed`);
+		throw new Error(`Origin ${quoteString(origin)} not allowed`);
 	}
 }
 
