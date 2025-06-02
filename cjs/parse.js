@@ -7,10 +7,11 @@ const { bufferToBase64Url, toBuffer } = require("./utils.js");
  *
  * This is great for playing and figuring out with WebAuthn, in production codebases use the two aformentioned alternatives as they also do verification.
  *
+ * @param {AttestationResponse | AssertionResponse} response
  * @returns {{ response: AssertionObject | AttestationObject, rawClientData: Uint8Array | Buffer, rawAuthenticatorData: Uint8Array | Buffer }}
  * @throws {Error}
  */
-function parse(/** @type {AttestationResponse | AssertionResponse} */ response) {
+function parse(response) {
 	const clientDataJSON = response.clientDataJSON;
 
 	/** @type {ClientData} */

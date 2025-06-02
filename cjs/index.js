@@ -1,16 +1,19 @@
-const { getAlgorithmFromKey, parse } = require("./parse.js");
+const { coseToJwk, getAlgorithmFromKey, parse } = require("./parse.js");
 const { toBuffer } = require("./utils.js");
-/** @import { AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, AssertionObject, COSE, JWK, AssertionOptions, AttestationOptions } from '../types' */
+/** @import { AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, AssertionObject, AssertionOptions, AttestationOptions, FIDO2U2FAttestation } from '../types' */
+/** @import { PackedAttestation, TPMAttestation, AndroidKeyAttestation, AndroidSafetyNetAttestation, AppleAttestation, CompoundAttestation } from '../types' */
 
 const quoteString = (s) => (typeof s === "string" ? `"${s}"` : s);
 
 /**
  * Parses and validates attestation responses
  *
+ * @param {AttestationResponse} a
+ * @param {AttestationOptions} opts
  * @returns {Promise<AttestationObject>}
  * @throws {Error}
  */
-async function attestation(/** @type {AttestationResponse} */ a, /** @type {AttestationOptions} */ opts) {
+async function attestation(a, opts) {
 	const { response, rawAuthenticatorData, rawClientData } = parse(a);
 
 	if (response.clientData.type !== "webauthn.create") {
@@ -21,22 +24,16 @@ async function attestation(/** @type {AttestationResponse} */ a, /** @type {Atte
 
 	verifyChallenge(response.clientData.challenge, opts.challenge);
 
-	switch (response.attestationObject.fmt) {
-		case "packed": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-packed-attestation
-			break;
-		case "tpm": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-tpm-attestation
-			break;
-		case "android-key": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-android-key-attestation
-			break;
-		case "android-safetynet": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-android-safetynet-attestation
-			break;
-		case "fido-u2f": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-fido-u2f-attestation
-			break;
-		case "apple": // TODO: https://www.w3.org/TR/webauthn-2/#sctn-apple-anonymous-attestation
-			break;
-		case "none":
-			break;
-	}
+	await {
+		packed: verifyPacked,
+		tpm: verifyTpm,
+		["android-key"]: verifyAndroidKey,
+		["android-safetynet"]: verifyAndroidSafetyNet,
+		["fido-u2f"]: verifyFidoU2f,
+		none() {},
+		apple: verifyApple,
+		compound: verifyCompound,
+	}[response.attestationObject.fmt](response.attestationObject.attStmt);
 
 	if ("userFactor" in opts) verifyUserFactor(response.attestationObject.authData.flags, opts.userFactor);
 	if ("origins" in opts) verifyOrigins(response.clientData.origin, opts.origins);
@@ -45,13 +42,29 @@ async function attestation(/** @type {AttestationResponse} */ a, /** @type {Atte
 	return response;
 }
 
+async function verifyPacked(/** @type {PackedAttestation['attStmt']} */ stmt) {}
+
+async function verifyTpm(/** @type {TPMAttestation['attStmt']} */ stmt) {}
+
+async function verifyAndroidKey(/** @type {AndroidKeyAttestation['attStmt']} */ stmt) {}
+
+async function verifyAndroidSafetyNet(/** @type {AndroidSafetyNetAttestation['attStmt']} */ stmt) {}
+
+async function verifyFidoU2f(/** @type {FIDO2U2FAttestation['attStmt']} */ stmt) {}
+
+async function verifyApple(/** @type {AppleAttestation['attStmt']} */ stmt) {}
+
+async function verifyCompound(/** @type {CompoundAttestation['attStmt']} */ stmt) {}
+
 /**
  * Parses and validates assertion responses
  *
+ * @param {AssertionResponse} a
+ * @param {AssertionOptions} opts
  * @returns {Promise<AssertionObject>}
  * @throws {Error}
  */
-async function assertion(/** @type {AssertionResponse} */ a, /** @type {AssertionOptions} */ opts) {
+async function assertion(a, opts) {
 	const { response, rawAuthenticatorData, rawClientData } = parse(a);
 
 	if (response.clientData.type !== "webauthn.get") {
@@ -123,7 +136,10 @@ function equals(/** @type {Uint8Array | ArrayBuffer} */ a1, /** @type {Uint8Arra
 	return true;
 }
 
-function verifyChallenge(/** @type {Base64URLString} */ clientChallenge, /** @type {Base64URLString} */ challenge) {
+function verifyChallenge(
+	/** @type {Base64URLString} */ clientChallenge,
+	/** @type {Base64URLString | Uint8Array} */ challenge
+) {
 	if (
 		challenge !== clientChallenge &&
 		!equals(toBuffer(challenge, "challenge"), toBuffer(clientChallenge, "clientData.challenge"))

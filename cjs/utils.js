@@ -13,6 +13,8 @@ function toBuffer(value, valueName) {
 			? value
 			: "Buffer" in globalThis
 			? Buffer.from(value, "base64")
+			: "fromBase64" in Uint8Array
+			? Uint8Array.fromBase64(value)
 			: Uint8Array.from(atob(base64UrlToBase64(value)), (c) => c.charCodeAt(0));
 	} catch (err) {
 		throw new Error(
@@ -26,6 +28,8 @@ function toBuffer(value, valueName) {
 function bufferToBase64Url(/** @type {Buffer | Uint8Array} */ buffer) {
 	return "Buffer" in globalThis && buffer instanceof Buffer
 		? buffer.toString("base64url")
+		: "toBase64" in Uint8Array.prototype
+		? buffer.toBase64({ alphabet: "base64url" })
 		: base64ToBase64Url(btoa(String.fromCharCode(...buffer)));
 }
 

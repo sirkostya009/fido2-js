@@ -51,7 +51,6 @@
 					},
 				});
 
-				console.log(credential.response.getTransports());
 				const response = await attestation(credential.response, { challenge });
 				console.log(response);
 				key = response.jwk();
@@ -73,7 +72,6 @@
 					},
 				});
 
-				console.log(credential);
 				const response = await assertion(credential.response, { challenge, publicKey: key });
 				console.log(response);
 			}
