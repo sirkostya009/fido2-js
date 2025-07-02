@@ -5,7 +5,7 @@ import { base64ToJSON, bufferToBase64Url, toBuffer } from "./utils.js";
 /**
  * Parsing function used by `assertion` and `attestation` functions.
  *
- * This is great for playing and figuring out with WebAuthn, in production codebases use the two aformentioned alternatives as they also do verification.
+ * This is great for playing and figuring out with WebAuthn, in production codebases use the two aforementioned alternatives as they also do verification.
  *
  * @param {AttestationResponse | AssertionResponse} response
  * @returns {{ response: AssertionObject | AttestationObject, rawClientData: Uint8Array | Buffer, rawAuthenticatorData: Uint8Array | Buffer }}
