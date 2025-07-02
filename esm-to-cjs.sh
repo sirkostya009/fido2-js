@@ -3,7 +3,7 @@
 mkdir -p cjs
 
 for file in esm/*.js; do
-	out="cjs/$(basename "${file%.js}.js")"
+	out=cjs/$(basename $file)
 	ids=()
 
 	content=$(sed -E '
@@ -12,7 +12,7 @@ for file in esm/*.js; do
 		s/^import[[:space:]]+["'\'']([^"'\'']+)["'\''];?/require("\1");/;
 		s/^export[[:space:]]+default[[:space:]]+([a-zA-Z0-9_$]+)/module.exports = \1/;
 		s/^export[[:space:]]+//;
-	' "$file")
+	' $file)
 
 	while read -r line; do
 		if [[ $line =~ ^export[[:space:]]+(const|let|var|async[[:space:]]+function|function|class)[[:space:]]+([a-zA-Z0-9_$]+) ]]; then

@@ -188,9 +188,8 @@ export interface CompoundAttestation {
 	attStmt: (CompoundAttestation & { fmt: Exclude<string, "compound">; [k: string]: any })[];
 }
 
-export interface AttestationObject {
-	clientData: ClientData & { type: "webauthn.create" };
-	attestationObject: (
+export interface AttestationObject<
+	Attestation =
 		| PackedAttestation
 		| TPMAttestation
 		| AndroidKeyAttestation
@@ -199,7 +198,9 @@ export interface AttestationObject {
 		| NoneAttestation
 		| AppleAttestation
 		| CompoundAttestation
-	) & {
+> {
+	clientData: ClientData & { type: "webauthn.create" };
+	attestationObject: Attestation & {
 		authData: AuthenticatorData & {
 			attestedCredentialData: AttestedCredentialData;
 		};

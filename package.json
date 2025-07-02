@@ -45,10 +45,11 @@
 	},
 	"homepage": "https://github.com/sirkostya009/fido2-js#readme",
 	"dependencies": {
+		"@peculiar/x509": "^1.12.4",
 		"cbor-x": "^1.6.0"
 	},
 	"devDependencies": {
-		"@types/node": "^22.9.0"
+		"@types/node": "^22"
 	},
 	"sideEffects": false
 }

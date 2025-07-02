@@ -9,13 +9,14 @@
 	<body>
 		<!-- Test by starting an http server in root folder, aka Live Server VS Code extension -->
 
-		<button style="font-size: xx-large">Attest</button>
-		<button style="font-size: xx-large">Assert</button>
+		<button onclick="attest()" style="font-size: xx-large">Attest</button>
+		<button onclick="assert()" style="font-size: xx-large">Assert</button>
 
 		<script type="importmap">
 			{
 				"imports": {
-					"cbor-x/decode-no-eval": "/node_modules/cbor-x/decode.js"
+					"cbor-x/decode-no-eval": "https://cdn.jsdelivr.net/npm/cbor-x@1.6.0/+esm",
+					"@peculiar/x509": "https://cdn.jsdelivr.net/npm/@peculiar/x509@1.12.4/+esm"
 				}
 			}
 		</script>
@@ -24,7 +25,8 @@
 
 			let key;
 
-			async function attest() {
+			window.attest = async function attest() {
+				console.log("attestation");
 				const challenge = new Uint8Array(32);
 				crypto.getRandomValues(challenge);
 				console.log("challenge", challenge);
@@ -56,7 +58,8 @@
 				key = response.jwk();
 			}
 
-			async function assert() {
+			window.assert = async function assert() {
+				console.log("assertion");
 				const challenge = new Uint8Array(32);
 				crypto.getRandomValues(challenge);
 				console.log("challenge", challenge);
@@ -75,10 +78,6 @@
 				const response = await assertion(credential.response, { challenge, publicKey: key });
 				console.log(response);
 			}
-
-			const [b1, b2] = document.querySelectorAll("button");
-			b1.onclick = attest;
-			b2.onclick = assert;
 		</script>
 	</body>
 </html>

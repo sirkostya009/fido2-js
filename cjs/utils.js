@@ -43,7 +43,21 @@ function base64ToBase64Url(/** @type {Base64URLString} */ string) {
 	return string.replaceAll("+", "-").replaceAll("/", "_").replace(/=*$/, "");
 }
 
+/** @returns {string=} */
+function base64ToJSON(/** @type {string} */ s) {
+	return "Buffer" in globalThis && s instanceof Buffer
+		? s // JSON.parse in node works on Buffer instances too
+		: s instanceof Uint8Array
+		? String.fromCharCode(...s)
+		: s instanceof ArrayBuffer
+		? String.fromCharCode(...new Uint8Array(s))
+		: typeof s === "string"
+		? atob(base64UrlToBase64(s))
+		: undefined;
+}
+
 module.exports.toBuffer = toBuffer;
 module.exports.bufferToBase64Url = bufferToBase64Url;
 module.exports.base64UrlToBase64 = base64UrlToBase64;
 module.exports.base64ToBase64Url = base64ToBase64Url;
+module.exports.base64ToJSON = base64ToJSON;

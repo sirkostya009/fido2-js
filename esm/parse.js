@@ -1,5 +1,5 @@
 import { decode, decodeMultiple } from "cbor-x/decode-no-eval";
-import { bufferToBase64Url, toBuffer } from "./utils.js";
+import { base64ToJSON, bufferToBase64Url, toBuffer } from "./utils.js";
 /** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, COSE, JWK } from '../types' */
 
 /**
@@ -15,17 +15,7 @@ export function parse(response) {
 	const clientDataJSON = response.clientDataJSON;
 
 	/** @type {ClientData} */
-	const clientData = JSON.parse(
-		"Buffer" in globalThis && clientDataJSON instanceof Buffer
-			? clientDataJSON
-			: clientDataJSON instanceof Uint8Array
-			? String.fromCharCode(...clientDataJSON)
-			: clientDataJSON instanceof ArrayBuffer
-			? String.fromCharCode(...new Uint8Array(clientDataJSON))
-			: typeof clientDataJSON === "string"
-			? atob(clientDataJSON)
-			: undefined
-	);
+	const clientData = JSON.parse(base64ToJSON(clientDataJSON));
 
 	switch (clientData.type) {
 		case "webauthn.create":
