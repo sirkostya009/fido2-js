@@ -1,6 +1,6 @@
 import { decode, decodeMultiple } from "cbor-x/decode-no-eval";
 import { base64ToJSON, bufferToBase64Url, toBuffer } from "./utils.js";
-/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, COSE, JWK } from '../types' */
+/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AssertionObject, AttestationObject, COSE, JWK } from '../types' */
 
 /**
  * Parsing function used by `assertion` and `attestation` functions.
@@ -57,8 +57,8 @@ export function parse(response) {
 				response: {
 					clientData,
 					authenticatorData: parseAuthenticatorData(rawAuthenticatorData),
-					signature,
-					userHandle,
+					signature: toBuffer(signature),
+					userHandle: toBuffer(userHandle),
 				},
 				rawClientData: toBuffer(clientDataJSON),
 				rawAuthenticatorData,

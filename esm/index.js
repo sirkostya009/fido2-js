@@ -1,7 +1,7 @@
 import { X509Certificate } from "@peculiar/x509";
 import { coseToJwk, getAlgorithmFromKey, parse } from "./parse.js";
 import { base64ToJSON, bufferToBase64Url, toBuffer } from "./utils.js";
-/** @import { AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, AssertionObject, AssertionOptions, AttestationOptions, FIDO2U2FAttestation, AttestedCredentialData, JWK } from '../types' */
+/** @import { AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, AssertionObject, AssertionOptions, AttestationOptions, FIDO2U2FAttestation, AttestedCredentialData, JWK, COSE } from '../types' */
 /** @import { PackedAttestation, TPMAttestation, AndroidKeyAttestation, AndroidSafetyNetAttestation, AppleAttestation, CompoundAttestation } from '../types' */
 
 const quoteString = (s) => (typeof s === "string" ? `"${s}"` : s);
@@ -51,7 +51,7 @@ export async function attestation(a, opts) {
 	return response;
 }
 
-async function signeeData(/** @type {Uint8Array} */ rawAuthenticatorData, /** @type {Uint8Array} */ rawClientData) {
+async function concatNonce(/** @type {Uint8Array} */ rawAuthenticatorData, /** @type {Uint8Array} */ rawClientData) {
 	const hash = new Uint8Array(await crypto.subtle.digest("sha-256", rawClientData));
 	const data = new Uint8Array(rawAuthenticatorData.length + hash.length);
 	data.set(rawAuthenticatorData);
@@ -59,7 +59,7 @@ async function signeeData(/** @type {Uint8Array} */ rawAuthenticatorData, /** @t
 	return data;
 }
 
-async function coerceCryptoKey(/** @type {AttestedCredentialData['credentialPublicKey'] | JWK | CryptoKey} */ key) {
+async function coerceCryptoKey(/** @type {COSE | JWK | CryptoKey} */ key) {
 	if ("1" in key) {
 		key = coseToJwk(key);
 	}
@@ -89,6 +89,8 @@ async function verifyPacked(
 ) {
 	/** @type {CryptoKey} */
 	let key;
+	/** @type {Algorithm} */
+	let alg;
 	if (!("x5c" in attStmt) || !attStmt.x5c.length) {
 		if (credentialPublicKey[3] !== attStmt.alg) {
 			throw new Error(
@@ -97,14 +99,17 @@ async function verifyPacked(
 				)}, expected: ${quoteString(credentialPublicKey[3])}`
 			);
 		}
-		key = coerceCryptoKey(credentialPublicKey);
+		key = await coerceCryptoKey(credentialPublicKey);
+		alg = key.algorithm;
 	} else {
-		key = await new X509Certificate(attStmt.x5c[0]).publicKey.export();
+		const cert = new X509Certificate(attStmt.x5c[0]);
+		key = await cert.publicKey.export();
+		alg = cert.signatureAlgorithm;
 	}
 
-	const data = await signeeData(rawAuth, rawClient);
+	const data = await concatNonce(rawAuth, rawClient);
 
-	if (!(await crypto.subtle.verify(key.algorithm, key, attStmt.sig, data))) {
+	if (!(await crypto.subtle.verify(alg, key, attStmt.sig, data))) {
 		throw new Error("Packed attestation verification failed");
 	}
 }
@@ -117,6 +122,13 @@ async function verifyTpm(
 	if ("2.0" !== attStmt.ver) {
 		throw new Error(`TPM attestation ver is not "2.0"`);
 	}
+
+	const data = await concatNonce(rawAuth, rawClient);
+	const cert = new X509Certificate(attStmt.x5c[0]);
+
+	if (!(await crypto.subtle.verify(cert.signatureAlgorithm, await cert.publicKey.export(), attStmt.sig, data))) {
+		throw new Error("TPM attestation signature verification failed");
+	}
 }
 
 async function verifyAndroidKey(
@@ -126,7 +138,7 @@ async function verifyAndroidKey(
 ) {
 	const key = await new X509Certificate(attStmt.x5c[0]).publicKey.export();
 
-	const data = await signeeData(rawAuth, rawClient);
+	const data = await concatNonce(rawAuth, rawClient);
 	if (!(await crypto.subtle.verify(key.algorithm, key, attStmt.sig, data))) {
 		throw new Error("Android Key attestation signature verification failed");
 	}
@@ -137,8 +149,8 @@ async function verifyAndroidSafetyNet(
 	/** @type {Uint8Array} */ rawAuth,
 	/** @type {Uint8Array} */ rawClient
 ) {
-	if (!attStmt.response) {
-		throw new Error("Android SafetyNet attestation missing response");
+	if (attStmt.ver === "2.0" || !attStmt.response) {
+		throw new Error("Android SafetyNet attestation invalid statement");
 	}
 
 	const jws = new TextDecoder().decode(attStmt.response);
@@ -148,7 +160,7 @@ async function verifyAndroidSafetyNet(
 	}
 
 	const payload = JSON.parse(base64ToJSON(_payload));
-	const data = await signeeData(rawAuth, rawClient);
+	const data = await concatNonce(rawAuth, rawClient);
 	const hash = new Uint8Array(await crypto.subtle.digest("sha-256", data));
 	const expectedNonce = bufferToBase64Url(hash);
 
@@ -162,7 +174,7 @@ async function verifyAndroidSafetyNet(
 
 	const header = JSON.parse(base64ToJSON(_header));
 	const signedData = jws.substring(0, jws.lastIndexOf("."));
-	const signature = toBuffer(_signature);
+	const signature = toBuffer(_signature, "attStmt.response header");
 	const certKey = await new X509Certificate(header.x5c[0]).publicKey.export();
 
 	if (
@@ -201,32 +213,75 @@ async function verifyFidoU2f(
 	);
 
 	signedData.set(rpIdHash, 1);
-	signedData.set(await crypto.subtle.digest("sha-256", rawClient), 1 + rpIdHash.length);
+	signedData.set(new Uint8Array(await crypto.subtle.digest("sha-256", rawClient)), 1 + rpIdHash.length);
 	signedData.set(credentialId, 33 + rpIdHash.length);
-	signedData.set(0x04, 33 + rpIdHash.length + credentialIdLength);
+	signedData.set([0x04], 33 + rpIdHash.length + credentialIdLength);
 	signedData.set(credentialPublicKey["-2"], 34 + rpIdHash.length + credentialIdLength);
 	signedData.set(
 		credentialPublicKey["-3"],
 		34 + rpIdHash.length + credentialIdLength + credentialPublicKey["-2"].length
 	);
 
+	if (attStmt.x5c.length !== 1) {
+		throw new Error(`U2F attestation must have exactly 1 certificate`);
+	}
+
 	const cert = new X509Certificate(attStmt.x5c[0]);
 
-	if (!(await crypto.subtle.verify(cert.signatureAlgorithm, cert.publicKey.export(), attStmt.sig, signedData))) {
+	if (
+		!(await crypto.subtle.verify(
+			{ name: "ECDSA", hash: "SHA-256" },
+			await cert.publicKey.export(),
+			attStmt.sig,
+			signedData
+		))
+	) {
 		throw new Error(`Fido U2F attestation verification failed`);
 	}
 }
 
 async function verifyApple(
-	/** @type {AttestationObject<AppleAttestation>} */ { attestationObject: { attStmt } },
+	/** @type {AttestationObject<AppleAttestation>} */ {
+		attestationObject: {
+			attStmt,
+			authData: {
+				attestedCredentialData: { credentialPublicKey },
+			},
+		},
+	},
 	/** @type {Uint8Array} */ rawAuth,
 	/** @type {Uint8Array} */ rawClient
 ) {
 	const cert = new X509Certificate(attStmt.x5c[0]);
-	const data = await signeeData(rawAuth, rawClient);
+	const nonce = await concatNonce(rawAuth, rawClient);
 
-	if (!(await crypto.subtle.verify(cert.signatureAlgorithm, cert.publicKey.export(), attStmt.sig, data))) {
-		throw new Error("Apple attestation signature verification failed");
+	const nonceExtension = cert.extensions.find((ext) => ext.type === "1.2.840.113635.100.8.2");
+
+	if (!nonceExtension) {
+		throw new Error("Apple attestation certificate missing nonce extension");
+	}
+
+	const expectedNonce = new Uint8Array(await crypto.subtle.digest("sha-256", nonce));
+
+	// The extension value is ASN.1 encoded as an OCTET STRING.
+	// The raw value of the extension is DER encoded, so we skip the tag (0x04) and length.
+	const certNonce = new Uint8Array(nonceExtension.value).slice(2);
+
+	if (expectedNonce.byteLength !== certNonce.byteLength) {
+		throw new Error("Apple attestation nonce mismatch");
+	}
+
+	for (let i = 0; i < expectedNonce.byteLength; i++) {
+		if (expectedNonce[i] !== certNonce[i]) {
+			throw new Error("Apple attestation nonce mismatch");
+		}
+	}
+
+	const certPublicKey = cert.publicKey.rawData;
+	const credPublicKey = await crypto.subtle.exportKey("spki", await coerceCryptoKey(credentialPublicKey));
+
+	if (!equals(certPublicKey, credPublicKey)) {
+		throw new Error("Apple attestation public key mismatch");
 	}
 }
 
@@ -288,7 +343,7 @@ export async function assertion(a, opts) {
 		);
 	}
 
-	const data = await signeeData(rawAuthenticatorData, rawClientData);
+	const data = await concatNonce(rawAuthenticatorData, rawClientData);
 
 	if (!(await crypto.subtle.verify(key.algorithm, key, toBuffer(response.signature, "signature"), data))) {
 		throw new Error("Signature verification failed");
@@ -304,6 +359,9 @@ export async function assertion(a, opts) {
 }
 
 function equals(/** @type {Uint8Array | ArrayBuffer} */ a1, /** @type {Uint8Array | ArrayBuffer} */ a2) {
+	if (a1.byteLength !== a2.byteLength) {
+		return false;
+	}
 	if (a1 instanceof ArrayBuffer) {
 		a1 = new Uint8Array(a1);
 	}
@@ -312,9 +370,6 @@ function equals(/** @type {Uint8Array | ArrayBuffer} */ a1, /** @type {Uint8Arra
 	}
 	if ("Buffer" in globalThis) {
 		return Buffer.compare(a1, a2) === 0;
-	}
-	if (a1.byteLength !== a2.byteLength) {
-		return false;
 	}
 
 	for (let i = 0; i < a1.byteLength; ++i) {
@@ -340,7 +395,10 @@ function verifyChallenge(
 	}
 }
 
-function verifyUserFactor(/** @type {AuthenticatorData['flags']} */ { uv, up }, /** @type {string} */ userFactor) {
+function verifyUserFactor(
+	/** @type {AuthenticatorData['flags']} */ { uv, up },
+	/** @type {string | string[]} */ userFactor
+) {
 	if (userFactor === "either") {
 		if (!uv && !up) {
 			throw new Error("User was not present nor verified");

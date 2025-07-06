@@ -44,7 +44,7 @@ function base64ToBase64Url(/** @type {Base64URLString} */ string) {
 }
 
 /** @returns {string=} */
-function base64ToJSON(/** @type {string} */ s) {
+function base64ToJSON(/** @type {string | Uint8Array | ArrayBuffer} */ s) {
 	return "Buffer" in globalThis && s instanceof Buffer
 		? s // JSON.parse in node works on Buffer instances too
 		: s instanceof Uint8Array

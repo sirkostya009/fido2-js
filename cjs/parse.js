@@ -1,11 +1,11 @@
 const { decode, decodeMultiple } = require("cbor-x/decode-no-eval");
 const { base64ToJSON, bufferToBase64Url, toBuffer } = require("./utils.js");
-/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, COSE, JWK } from '../types' */
+/** @import { ClientData, AuthenticatorData, AssertionResponse, AttestationResponse, AssertionObject, AttestationObject, COSE, JWK } from '../types' */
 
 /**
  * Parsing function used by `assertion` and `attestation` functions.
  *
- * This is great for playing and figuring out with WebAuthn, in production codebases use the two aformentioned alternatives as they also do verification.
+ * This is great for playing and figuring out with WebAuthn, in production codebases use the two aforementioned alternatives as they also do verification.
  *
  * @param {AttestationResponse | AssertionResponse} response
  * @returns {{ response: AssertionObject | AttestationObject, rawClientData: Uint8Array | Buffer, rawAuthenticatorData: Uint8Array | Buffer }}
@@ -57,8 +57,8 @@ function parse(response) {
 				response: {
 					clientData,
 					authenticatorData: parseAuthenticatorData(rawAuthenticatorData),
-					signature,
-					userHandle,
+					signature: toBuffer(signature),
+					userHandle: toBuffer(userHandle),
 				},
 				rawClientData: toBuffer(clientDataJSON),
 				rawAuthenticatorData,
