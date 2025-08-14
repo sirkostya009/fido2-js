@@ -1,10 +1,8 @@
 const { X509Certificate } = require("@peculiar/x509");
 const { coseToJwk, getAlgorithmFromKey, parse } = require("./parse.js");
-const { base64ToJSON, bufferToBase64Url, toBuffer } = require("./utils.js");
+const { base64ToJSON, bufferToBase64Url, toBuffer, quoteString } = require("./utils.js");
 /** @import { AuthenticatorData, AssertionResponse, AttestationResponse, AttestationObject, AssertionObject, AssertionOptions, AttestationOptions, FIDO2U2FAttestation, AttestedCredentialData, JWK, COSE } from '../types' */
 /** @import { PackedAttestation, TPMAttestation, AndroidKeyAttestation, AndroidSafetyNetAttestation, AppleAttestation, CompoundAttestation } from '../types' */
-
-const quoteString = (s) => (typeof s === "string" ? `"${s}"` : s);
 
 const verifiers = {
 	packed: verifyPacked,
@@ -150,7 +148,7 @@ async function verifyAndroidSafetyNet(
 	/** @type {Uint8Array} */ rawClient
 ) {
 	if (attStmt.ver === "2.0" || !attStmt.response) {
-		throw new Error("Android SafetyNet attestation invalid at");
+		throw new Error("Android SafetyNet attestation invalid statement");
 	}
 
 	const jws = new TextDecoder().decode(attStmt.response);

@@ -1,4 +1,11 @@
 /**
+ * @template T
+ * @param s {T}
+ * @returns {T | string}
+ */
+export const quoteString = (s) => (typeof s === "string" ? `"${s}"` : s);
+
+/**
  * Converts base64url or base64 string to either a Node.js Buffer (if available) or Uint8Array.
  *
  * @param {ArrayBuffer | Uint8Array | Base64URLString} value buffer-coercible
@@ -18,7 +25,8 @@ export function toBuffer(value, valueName) {
 			: Uint8Array.from(atob(base64UrlToBase64(value)), (c) => c.charCodeAt(0));
 	} catch (err) {
 		throw new Error(
-			(valueName ?? value ?? `"value"`) + " must be either an ArrayBuffer coercible or a base64 string",
+			(valueName ?? quoteString(value) ?? `"value"`) +
+				" must be either an ArrayBuffer coercible or a base64 string",
 			{ cause: err }
 		);
 	}
