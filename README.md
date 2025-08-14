@@ -10,6 +10,8 @@ Supports common methods of attestation such as EC, OKP and RSA.
 
 ## Usage
 
+This is an ESM-only package, and starting version 20.17 Node.js supports requiring pure ESM modules. See [Loading ECMAScript modules using require](https://nodejs.org/api/modules.html#loading-ecmascript-modules-using-require).
+
 ### Attestation
 
 ```js
