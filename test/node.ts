@@ -1,5 +1,5 @@
 import { test } from "node:test";
-import * as fido from "../esm/index.js";
+import * as fido from "../lib/index.js";
 
 test("main", async function () {
 	const attestation = await fido.attestation(

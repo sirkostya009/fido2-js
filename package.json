@@ -9,9 +9,8 @@
 		"test": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage ./test/node.ts",
 		"test:watch": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage --watch ./test/node.ts"
 	},
-	"types": "types.d.ts",
+	"types": "./lib/types.d.ts",
 	"files": [
-		"types.d.ts",
 		"lib"
 	],
 	"exports": {
