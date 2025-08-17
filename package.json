@@ -6,8 +6,8 @@
 	"description": "Library for parsing and verifying FIDO2 WebAuthn attestations and assertions",
 	"type": "module",
 	"scripts": {
-		"test": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage ./test/node.ts",
-		"test:watch": "node --test --experimental-strip-types --experimental-transform-types --experimental-test-coverage --watch ./test/node.ts"
+		"test": "node --test --experimental-transform-types --experimental-test-coverage",
+		"test:watch": "node --test --experimental-transform-types --experimental-test-coverage --watch"
 	},
 	"types": "./lib/types.d.ts",
 	"files": [
