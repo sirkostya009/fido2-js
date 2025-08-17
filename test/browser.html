@@ -9,26 +9,24 @@
 	<body>
 		<!-- Test by starting an http server in root folder, aka Live Server VS Code extension -->
 
-		<button onclick="attest()" style="font-size: xx-large">Attest</button>
-		<button onclick="assert()" style="font-size: xx-large">Assert</button>
+		<button onclick="attest()" style="font-size: 20rem; display: block; margin-bottom: 0.5rem;">Attest</button>
+		<button onclick="assert()" style="font-size: 20rem; display: block;">Assert</button>
 
 		<script type="importmap">
 			{
 				"imports": {
 					"cbor-x/decode-no-eval": "https://cdn.jsdelivr.net/npm/cbor-x@1.6.0/+esm",
-					"@peculiar/x509": "https://cdn.jsdelivr.net/npm/@peculiar/x509@1.12.4/+esm"
+					"@peculiar/x509": "https://cdn.jsdelivr.net/npm/@peculiar/x509@1.13.0/+esm"
 				}
 			}
 		</script>
 		<script type="module">
-			import { attestation, assertion } from "/esm/index.js";
-
-			let key;
+			import { attestation, assertion } from "/lib/index.js";
 
 			window.attest = async function attest() {
 				console.log("attestation");
-				const challenge = new Uint8Array(32);
-				crypto.getRandomValues(challenge);
+				const challenge = crypto.getRandomValues(new Uint8Array(32));
+				// console.log("challenge", challenge.toBase64());
 				console.log("challenge", challenge);
 
 				/** @type {PublicKeyCredential} */
@@ -53,15 +51,19 @@
 					},
 				});
 
+				console.log(credential.toJSON());
+
 				const response = await attestation(credential.response, { challenge });
+				await attestation(credential.toJSON().response, { challenge });
 				console.log(response);
-				key = response.jwk();
-			}
+				localStorage.id = btoa(String.fromCharCode(...response.attestationObject.authData.attestedCredentialData.credentialId));
+				localStorage.jwk = JSON.stringify(response.jwk());
+			};
 
 			window.assert = async function assert() {
 				console.log("assertion");
-				const challenge = new Uint8Array(32);
-				crypto.getRandomValues(challenge);
+				const challenge = crypto.getRandomValues(new Uint8Array(32));
+				// console.log("challenge", challenge.toBase64());
 				console.log("challenge", challenge);
 
 				/** @type {PublicKeyCredential} */
@@ -69,15 +71,18 @@
 					publicKey: {
 						challenge,
 						rpId: location.hostname,
-						allowCredentials: [credential],
+						allowCredentials: [{ type: "public-key", id: Uint8Array.from(atob(localStorage.id), c => c.charCodeAt(0)) }],
 						timeout: 60000,
 						userVerification: "preferred",
 					},
 				});
 
-				const response = await assertion(credential.response, { challenge, publicKey: key });
+				console.log(credential.toJSON());
+
+				const response = await assertion(credential.response, { challenge, publicKey: JSON.parse(localStorage.jwk) });
+				await assertion(credential.toJSON().response, { challenge, publicKey: JSON.parse(localStorage.jwk) });
 				console.log(response);
-			}
+			};
 		</script>
 	</body>
 </html>
