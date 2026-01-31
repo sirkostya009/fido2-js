@@ -197,7 +197,7 @@ export interface AttestationObject<
 		| FIDO2U2FAttestation
 		| NoneAttestation
 		| AppleAttestation
-		| CompoundAttestation
+		| CompoundAttestation,
 > {
 	clientData: ClientData & { type: "webauthn.create" };
 	attestationObject: Attestation & {

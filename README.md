@@ -2,7 +2,7 @@
 
 `fido2-js` is a simple library for parsing and verifying FIDO2 attestation and assertion responses.
 
-Depends on `cbor-x`, and `SubtleCrypto` API. Works in browsers.
+Depends on `cbor-x`, `@peculiar/x509`, and `SubtleCrypto` API. Works in browsers.
 
 Doesn't provide means of generating requests for the client, but that isn't hard to do on your own anyway.
 
@@ -76,7 +76,7 @@ if (parsed instanceof Error) { // safe to assume Error
 
 ### Browser
 
-You can easily pull this library from jsdeliver:
+You can easily pull this library along with its dependencies from jsdeliver:
 
 ```html
 <script type="module">
@@ -87,30 +87,11 @@ You can easily pull this library from jsdeliver:
 </script>
 ```
 
-If you don't use a fancy CDN that automatically minifies and bundles libraries (like jsdelivr), you will have to provide an importmap for `cbor-x`.
-
-```html
-<script type="importmap">
-    {
-        "imports": {
-            "cbor-x/decode-no-eval": "https://cdn.jsdelivr.net/npm/cbor-x@1.6.0/decode.min.js"
-        }
-    }
-</script>
-<script>
-    // note the /esm/ folder for ESM imports
-    import {} from '/path/to/lib/esm/index.js';
-    import parse from '/path/to/lib/esm/parse.js';
-
-    // ...
-</script>
-```
-
 ### Bonus
 
 There's plenty of WebAuthn tutorials out there, but most of them only show basic flow of authentication, without revealing the much-needed-to-know details.
 
-If you're new to FIDO2 WebAuthn, I suggest playing with the `parse` function to better understand the protocol and how it works.
+If you're new to FIDO2 WebAuthn, I suggest playing with the `parse` function to better understand the protocol shapes.
 MDN's WebAuthn documentation is your best friend for this: [Web Authentication API | MDN](https://developer.mozilla.org/docs/Web/API/Web_Authentication_API)
 
 ```js
@@ -132,7 +113,7 @@ function endpoint(body) {
 
 You can also view a browser-only example at [browser.html](/test/browser.html).
 
-> **Note:**  
+> [!NOTE]
 > On Linux, if you don't have a physical security key available, you may need an authenticator emulator. Check out [virtual-fido](https://github.com/bulwarkid/virtual-fido).
 
 ## License

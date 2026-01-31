@@ -59,8 +59,6 @@ test("main", async function () {
 			userFactor: ["verified", "present"],
 			origins: ["http://localhost:5500"],
 			rpId: "localhost",
-			signCount: 0,
-			userHandle: "BA==",
 		}
 	);
 
