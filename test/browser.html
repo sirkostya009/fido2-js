@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>fido2-js</title>
+	</head>
+
+	<body>
+		<!-- Test by starting an http server in root folder, aka Live Server VS Code extension -->
+
+		<button onclick="attest()" style="font-size: 20rem; display: block; margin-bottom: 0.5rem;">Attest</button>
+		<button onclick="assert()" style="font-size: 20rem; display: block;">Assert</button>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"cbor-x/decode-no-eval": "https://cdn.jsdelivr.net/npm/cbor-x@1.6.0/+esm",
+					"@peculiar/x509": "https://cdn.jsdelivr.net/npm/@peculiar/x509@1.13.0/+esm"
+				}
+			}
+		</script>
+		<script type="module">
+			import { attestation, assertion } from "/lib/index.js";
+
+			window.attest = async function attest() {
+				console.log("attestation");
+				const challenge = crypto.getRandomValues(new Uint8Array(32));
+				// console.log("challenge", challenge.toBase64());
+				console.log("challenge", challenge);
+
+				/** @type {PublicKeyCredential} */
+				const credential = await navigator.credentials.create({
+					publicKey: {
+						challenge,
+						rp: {
+							name: "Example",
+							id: location.hostname,
+						},
+						user: {
+							id: new Uint8Array([1, 2, 3, 4]),
+							name: "test@example.com",
+							displayName: "Test User",
+						},
+						pubKeyCredParams: [
+							{ type: "public-key", alg: -7 }, // ES256
+							{ type: "public-key", alg: -8 }, // Ed25519
+							{ type: "public-key", alg: -257 }, // RS256
+						],
+						timeout: 60000,
+					},
+				});
+
+				console.log(credential.toJSON());
+
+				const response = await attestation(credential.response, { challenge });
+				await attestation(credential.toJSON().response, { challenge });
+				console.log(response);
+				localStorage.id = btoa(String.fromCharCode(...response.attestationObject.authData.attestedCredentialData.credentialId));
+				localStorage.jwk = JSON.stringify(response.jwk());
+			};
+
+			window.assert = async function assert() {
+				console.log("assertion");
+				const challenge = crypto.getRandomValues(new Uint8Array(32));
+				// console.log("challenge", challenge.toBase64());
+				console.log("challenge", challenge);
+
+				/** @type {PublicKeyCredential} */
+				const credential = await navigator.credentials.get({
+					publicKey: {
+						challenge,
+						rpId: location.hostname,
+						allowCredentials: [{ type: "public-key", id: Uint8Array.from(atob(localStorage.id), c => c.charCodeAt(0)) }],
+						timeout: 60000,
+						userVerification: "preferred",
+					},
+				});
+
+				console.log(credential.toJSON());
+
+				const response = await assertion(credential.response, { challenge, publicKey: JSON.parse(localStorage.jwk) });
+				await assertion(credential.toJSON().response, { challenge, publicKey: JSON.parse(localStorage.jwk) });
+				console.log(response);
+			};
+		</script>
+	</body>
+</html>
